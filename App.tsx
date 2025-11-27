@@ -721,19 +721,19 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col justify-center">
                  <div className="flex items-center gap-2">
-                     <h1 className="text-base font-bold text-gray-100 tracking-tight leading-none">SerumTab</h1>
+                     <h1 className="text-base font-bold text-gray-100 tracking-tight leading-none">SerTab</h1>
                      <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
                         Beta 0.1
                      </span>
                  </div>
-                 <div className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">
+                 <div className="text-[10px] text-gray-500 font-['Courier_New'] leading-tight mt-0.5">
                     development in progress <span className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondioxide</span>
                  </div>
              </div>
         </div>
         
         <div className="flex items-center gap-3 shrink-0">
-             <div className="text-xs font-mono mr-3 flex items-center">
+             <div className="text-xs font-['Courier_New'] mr-3 flex items-center">
                 {saveStatus === 'saving' && <span className="text-yellow-500/80 animate-pulse font-medium">Saving...</span>}
                 {saveStatus === 'saved' && <span className="text-gray-500 flex items-center"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>Saved</span>}
                 {saveStatus === 'modified' && <span className="text-gray-500 italic">Unsaved</span>}
@@ -834,7 +834,7 @@ const App: React.FC = () => {
              )}
         </div>
 
-        <div className="absolute bottom-3 right-4 text-[10px] text-gray-700 font-medium pointer-events-none select-none z-50">
+        <div className="absolute bottom-3 right-4 text-[10px] text-gray-700 font-['Courier_New'] pointer-events-none select-none z-50">
            Tool belongs to Serum AI. All rights reserved.
         </div>
       </main>
