@@ -12,6 +12,7 @@ interface ReviewViewProps {
   chordNames: (string | null)[];
   connections?: { col: number; str: number }[];
   onClose: () => void;
+  onRemoveConnectionChain?: (startCol: number, endCol: number, str: number) => void;
 }
 
 const getDurationSteps = (d: NoteDuration): number => {
@@ -82,7 +83,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   durations,
   chordNames,
   connections = [],
-  onClose
+  onClose,
+  onRemoveConnectionChain
 }) => {
   const stepsPerBar = TIME_SIGNATURES[timeSignature].stepsPerBar;
   const BARS_PER_SYSTEM = 4;
@@ -219,7 +221,12 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                           stroke="black"
                           strokeWidth="1.5"
                           strokeLinecap="round"
-                       />
+                          className="hover:stroke-cyan-600 cursor-pointer transition-colors duration-200"
+                          style={{ pointerEvents: 'auto' }}
+                          onDoubleClick={() => onRemoveConnectionChain?.(chain.col, chain.endCol, chain.str)}
+                       >
+                         <title>Double click to remove</title>
+                       </path>
                   );
               });
 
@@ -385,7 +392,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
       {/* Paper */}
       <div className="max-w-[850px] mx-auto bg-white min-h-screen my-8 shadow-xl p-12 print:shadow-none print:my-0 print:mx-auto print:w-full print:p-8 print:max-w-none">
          <div className="border-b-2 border-gray-800 pb-6 mb-10 text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-tight">{title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2 uppercase tracking-tight">{title}</h1>
             <div className="flex justify-center space-x-8 text-sm text-gray-600 font-mono uppercase tracking-widest mt-4">
                <div><span className="font-bold text-gray-400 block text-[10px]">Instrument</span>{instrument.name}</div>
                <div><span className="font-bold text-gray-400 block text-[10px]">Tuning</span>{tuning.join(' ')}</div>

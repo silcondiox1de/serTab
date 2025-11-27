@@ -18,9 +18,9 @@ const Toast = ({ message, onClose }: { message: string | null, onClose: () => vo
     if (!message) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 bg-cyan-600 text-white px-4 py-3 rounded-lg shadow-xl z-50 flex items-center animate-bounce-in">
-            <span className="font-bold mr-2">✓</span>
-            {message}
+        <div className="fixed bottom-6 right-6 bg-cyan-600 text-white px-4 py-3 rounded-lg shadow-xl z-50 flex items-center animate-bounce-in border border-cyan-500/30">
+            <span className="font-bold mr-2 text-lg">✓</span>
+            <span className="font-medium text-sm">{message}</span>
         </div>
     );
 };
@@ -228,6 +228,20 @@ const App: React.FC = () => {
             setToastMessage("Link Added");
             updateStateWithHistory(columns, durations, chordNames, newConnections);
         }
+    }
+  };
+
+  const handleRemoveConnectionChain = (startCol: number, endCol: number, str: number) => {
+    const newConnections = connections.filter(c => {
+        if (c.str !== str) return true;
+        // Remove all connections that lie within the chain's span
+        if (c.col >= startCol && c.col < endCol) return false;
+        return true;
+    });
+    
+    if (newConnections.length !== connections.length) {
+        updateStateWithHistory(columns, durations, chordNames, newConnections);
+        setToastMessage("Chain Removed");
     }
   };
 
@@ -679,12 +693,13 @@ const App: React.FC = () => {
         chordNames={chordNames}
         connections={connections}
         onClose={() => setIsReviewMode(false)}
+        onRemoveConnectionChain={handleRemoveConnectionChain}
       />
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="flex flex-col h-screen bg-gray-950 text-white font-sans selection:bg-cyan-500/30 selection:text-white overflow-hidden">
       <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       
       <ChordLibrary 
@@ -699,31 +714,35 @@ const App: React.FC = () => {
         }}
       />
 
-      <header className="flex-none h-16 border-b border-gray-800 bg-gray-900 flex items-center px-6 justify-between z-40 gap-4 shrink-0">
-        <div className="flex flex-col">
-            <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cyan-500/20">
-                    S
-                </div>
-                <div className="flex flex-col leading-tight">
-                    <span className="text-base font-bold tracking-tight text-gray-100">SerumTab</span>
-                    <span className="text-[10px] text-cyan-400 font-mono">beta 0.1</span>
-                </div>
-            </div>
-            <span className="text-[10px] text-gray-500 mt-0.5 ml-11">under development by @silicondioxide</span>
+      <header className="flex-none h-16 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm flex items-center px-6 justify-between z-40 gap-4 shrink-0 shadow-sm">
+        <div className="flex items-center gap-3">
+             <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-cyan-500/20 ring-1 ring-white/10">
+                S
+             </div>
+             <div className="flex flex-col justify-center">
+                 <div className="flex items-center gap-2">
+                     <h1 className="text-base font-bold text-gray-100 tracking-tight leading-none">SerumTab</h1>
+                     <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
+                        Beta 0.1
+                     </span>
+                 </div>
+                 <div className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">
+                    development in progress <span className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondioxide</span>
+                 </div>
+             </div>
         </div>
         
-        <div className="flex items-center space-x-3 shrink-0">
-             <div className="text-xs font-mono mr-2 flex items-center">
-                {saveStatus === 'saving' && <span className="text-yellow-400 animate-pulse">Saving...</span>}
-                {saveStatus === 'saved' && <span className="text-gray-500">All changes saved</span>}
-                 {saveStatus === 'modified' && <span className="text-gray-500 italic">Unsaved changes...</span>}
+        <div className="flex items-center gap-3 shrink-0">
+             <div className="text-xs font-mono mr-3 flex items-center">
+                {saveStatus === 'saving' && <span className="text-yellow-500/80 animate-pulse font-medium">Saving...</span>}
+                {saveStatus === 'saved' && <span className="text-gray-500 flex items-center"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>Saved</span>}
+                {saveStatus === 'modified' && <span className="text-gray-500 italic">Unsaved</span>}
              </div>
 
              {hasDraft && (
                  <button 
                     onClick={handleRestoreDraft}
-                    className="px-3 py-1.5 text-xs font-medium text-cyan-300 hover:text-cyan-100 hover:bg-cyan-900/30 rounded transition-colors"
+                    className="h-8 px-3 text-xs font-medium text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 rounded-md border border-cyan-900/50 transition-all"
                     title="Restore last auto-saved session"
                 >
                     Restore Session
@@ -732,7 +751,7 @@ const App: React.FC = () => {
 
              <button 
                 onClick={() => setIsReviewMode(true)}
-                className="px-3 py-1.5 text-xs font-bold text-gray-900 bg-white hover:bg-gray-200 rounded transition-colors"
+                className="h-8 px-4 text-xs font-bold text-gray-200 bg-gray-800 hover:bg-gray-700 hover:text-white rounded-md border border-gray-700 transition-all"
                 title="View as Sheet"
             >
                 Review
@@ -740,7 +759,7 @@ const App: React.FC = () => {
 
              <button 
                 onClick={handleSaveProject}
-                className="px-3 py-1.5 text-xs font-bold text-gray-900 bg-cyan-500 hover:bg-cyan-400 rounded transition-colors shadow-lg shadow-cyan-500/20"
+                className="h-8 px-4 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 rounded-md border border-cyan-500 transition-all shadow-md shadow-cyan-900/20"
                 title="Download current project to .json"
             >
                 Download
@@ -748,7 +767,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <section className="flex-none shrink-0">
+      <section className="flex-none shrink-0 z-30">
           <Controls
             isPlaying={isPlaying}
             bpm={bpm}
@@ -774,19 +793,19 @@ const App: React.FC = () => {
           />
       </section>
 
-      <section className="flex-none shrink-0 bg-[#111827] pt-6 pb-2 flex justify-center z-10">
+      <section className="flex-none shrink-0 bg-gray-900/50 border-b border-gray-800 py-3 flex justify-center z-10">
           <input 
               type="text" 
               value={songTitle}
               onChange={(e) => setSongTitle(e.target.value)}
               placeholder="Song Title"
-              className="bg-transparent text-center text-2xl font-bold text-gray-100 placeholder-gray-600 focus:outline-none border-b border-transparent focus:border-cyan-500 hover:border-gray-700 transition-all w-96"
+              className="bg-transparent text-center text-xl font-bold text-gray-200 placeholder-gray-700 focus:outline-none border-b-2 border-transparent focus:border-cyan-500/50 hover:border-gray-800 transition-all w-auto min-w-[300px]"
           />
       </section>
 
-      <main className="flex-1 relative overflow-hidden bg-[#111827]">
+      <main className="flex-1 relative overflow-hidden bg-gray-950">
         <div className="absolute inset-0 opacity-5 pointer-events-none" 
-             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #374151 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #6b7280 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
         </div>
 
         <div className="absolute inset-0 pb-12 pt-0">
@@ -810,12 +829,13 @@ const App: React.FC = () => {
                     onUpdateColumn={handleUpdateColumn}
                     onUpdateDuration={handleUpdateDuration}
                     onUpdateChord={handleUpdateChord}
+                    onRemoveConnectionChain={handleRemoveConnectionChain}
                 />
              )}
         </div>
 
-        <div className="absolute bottom-2 right-4 text-[10px] text-gray-600 pointer-events-none select-none z-50">
-           Tool belongs to Serum AI. All rights reserved. No commercial use.
+        <div className="absolute bottom-3 right-4 text-[10px] text-gray-700 font-medium pointer-events-none select-none z-50">
+           Tool belongs to Serum AI. All rights reserved.
         </div>
       </main>
 

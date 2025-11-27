@@ -66,9 +66,12 @@ export const TabCell: React.FC<TabCellProps> = ({
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full h-full border-r border-gray-700 bg-gray-900 group">
+    <div className="relative flex items-center justify-center w-full h-full border-r border-gray-700/20 bg-gray-900/90 group transition-colors duration-150">
        {/* String Line Background - Highlight on Hover */}
-      <div className="absolute w-full h-[1px] bg-gray-600 pointer-events-none z-0 transition-all duration-200 group-hover:bg-cyan-400 group-hover:h-[2px] group-hover:shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
+      <div className={`absolute w-full h-[1px] pointer-events-none z-0 transition-all duration-200 
+          ${isActive ? 'bg-gray-600 h-[1.5px]' : 'bg-gray-700'} 
+          group-hover:bg-cyan-500/50 group-hover:h-[2px] group-hover:shadow-[0_0_8px_rgba(34,211,238,0.4)]
+      `}></div>
       
       {/* Input */}
       <input
@@ -80,9 +83,9 @@ export const TabCell: React.FC<TabCellProps> = ({
         onFocus={onFocus}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        className={`relative z-10 w-full h-full text-center bg-transparent border-0 focus:ring-0 focus:outline-none font-mono text-sm transition-colors
-          ${note === -1 ? 'text-gray-500 placeholder-transparent' : 'text-cyan-400 font-bold'}
-          ${isActive ? 'bg-gray-800 rounded-sm' : ''}
+        className={`relative z-10 w-full h-full text-center bg-transparent border-0 focus:ring-0 focus:outline-none font-mono text-sm transition-all
+          ${note === -1 ? 'text-gray-500 placeholder-transparent' : 'text-cyan-400 font-bold scale-110'}
+          ${isActive ? 'bg-gray-800 rounded-sm shadow-inner' : ''}
         `}
       />
     </div>

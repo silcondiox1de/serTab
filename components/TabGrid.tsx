@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TabColumn, Note, InstrumentConfig, NoteDuration } from '../types';
 import { TabCell } from './TabCell';
 
@@ -13,8 +13,8 @@ interface DurationMarkerProps {
 
 const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widthPercent, span, beam8, beam16 }) => {
   const isBeamed = beam8.left || beam8.right;
-  const beamClass = "bg-gray-400 group-hover:bg-cyan-400";
-  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400";
+  const beamClass = "bg-gray-500 group-hover:bg-cyan-400 transition-colors";
+  const strokeClass = "stroke-gray-500 group-hover:stroke-cyan-400 transition-colors";
 
   // Calculate the center position of the note head relative to the container
   const singleStepWidth = 100 / span;
@@ -22,7 +22,7 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widt
 
   // Render SVG Symbol (Head, Stem, Flags)
   const renderSymbol = () => {
-      const strokeWidth = 2;
+      const strokeWidth = 1.5;
       const height = 32;
       const cx = 10; // Center of 20px wide SVG
 
@@ -118,7 +118,7 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widt
          </div>
          
          {/* Right Border separator */}
-         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-gray-700/30 pointer-events-none"></div>
+         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-gray-700/20 pointer-events-none"></div>
       </div>
   )
 };
@@ -141,6 +141,7 @@ interface TabGridProps {
   onUpdateColumn: (index: number, column: TabColumn) => void;
   onUpdateDuration: (index: number, duration: NoteDuration) => void;
   onUpdateChord: (index: number, val: string) => void;
+  onRemoveConnectionChain?: (startCol: number, endCol: number, str: number) => void;
 }
 
 export const TabGrid: React.FC<TabGridProps> = ({ 
@@ -160,7 +161,8 @@ export const TabGrid: React.FC<TabGridProps> = ({
   onTuningChange,
   onUpdateColumn,
   onUpdateDuration,
-  onUpdateChord
+  onUpdateChord,
+  onRemoveConnectionChain
 }) => {
   
   const PREVIEW_BARS_PER_ROW = 8;
@@ -183,6 +185,8 @@ export const TabGrid: React.FC<TabGridProps> = ({
   }
 
   const activeBarIndex = activeCell ? Math.floor(activeCell.col / stepsPerBar) : -1;
+  const wheelTimeoutRef = useRef<number | null>(null);
+  const editAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentColumnIndex >= 0) {
@@ -193,6 +197,42 @@ export const TabGrid: React.FC<TabGridProps> = ({
       }
     }
   }, [currentColumnIndex, stepsPerBar, editRowStartBarIndex, onEditRowStartChange]);
+
+  // Handle Wheel Event Natively to prevent Default Scrolling
+  useEffect(() => {
+    const el = editAreaRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+        // Stop the page from scrolling
+        e.preventDefault();
+
+        // Throttle rapid scroll events
+        if (wheelTimeoutRef.current) return;
+        
+        const delta = e.deltaY;
+        // Threshold to avoid accidental sensitivity
+        if (Math.abs(delta) < 10) return;
+
+        const direction = delta > 0 ? 1 : -1;
+        const newStart = editRowStartBarIndex + (direction * EDIT_BARS_PER_ROW);
+
+        if (newStart >= 0 && newStart < totalBars) {
+            onEditRowStartChange(newStart);
+            // Add cooldown to prevent flipping through pages too fast
+            wheelTimeoutRef.current = window.setTimeout(() => {
+                wheelTimeoutRef.current = null;
+            }, 250);
+        }
+    };
+
+    // { passive: false } is required to allowing preventDefault on wheel events
+    el.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+        el.removeEventListener('wheel', handleWheel);
+    };
+  }, [editRowStartBarIndex, totalBars, onEditRowStartChange]);
 
   const handleUpdateNote = (globalColIdx: number, strIdx: number, newNote: Note) => {
     const newColumn = [...columns[globalColIdx]];
@@ -390,33 +430,39 @@ export const TabGrid: React.FC<TabGridProps> = ({
     const rowStartColIndex = editRowStartBarIndex * stepsPerBar;
 
     return (
-        <div className="relative pl-14 mb-8 bg-gray-800/20 p-4 rounded-xl border border-gray-700 shadow-2xl">
-            <div className="absolute -top-3 left-4 bg-cyan-900 text-cyan-200 text-xs px-2 py-0.5 rounded border border-cyan-700 uppercase tracking-widest font-bold shadow-lg">
-                Editing
+        <div 
+            ref={editAreaRef}
+            className="relative pl-14 mb-8 bg-[#161e2e] p-4 rounded-xl border border-gray-700/50 shadow-2xl transition-all duration-300 ring-1 ring-white/5"
+        >
+            <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-cyan-900 to-blue-900 text-cyan-100 text-[10px] uppercase tracking-widest font-bold rounded-full shadow-lg border border-cyan-800/50 z-30">
+                Editing Section
             </div>
 
-            <div className="absolute left-0 top-4 bottom-4 w-14 z-20 flex flex-col bg-gray-900/90 backdrop-blur-sm border-r border-gray-700/50 rounded-l-xl">
-              <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0`}></div>
-              <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center`}>
-                  <span className="text-[8px] text-gray-600 font-bold">CHD</span>
+            {/* Left Sidebar Control Panel Style */}
+            <div className="absolute left-0 top-4 bottom-4 w-14 z-20 flex flex-col bg-gray-800 border-r border-gray-700/50 rounded-l-xl shadow-md">
+              <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-700/30`}></div>
+              <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center bg-gray-800/50`}>
+                  <span className="text-[8px] text-gray-500 font-bold">CHD</span>
               </div>
-              {tuning.map((label, i) => (
-                <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1`}>
-                  <input 
-                      type="text"
-                      value={label}
-                      onChange={(e) => onTuningChange(i, e.target.value)}
-                      className="w-full bg-transparent text-center font-mono font-bold focus:outline-none border-transparent text-sm text-gray-400 focus:text-cyan-400 hover:text-gray-200 transition-colors cursor-text"
-                      maxLength={3}
-                  />
-                </div>
-              ))}
-              <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center`}>
-                 <span className="text-[8px] text-gray-600 font-bold">DUR</span>
+              <div className="flex-1 flex flex-col justify-center py-1 bg-gray-900/30">
+                  {tuning.map((label, i) => (
+                    <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1`}>
+                      <input 
+                          type="text"
+                          value={label}
+                          onChange={(e) => onTuningChange(i, e.target.value)}
+                          className="w-full bg-transparent text-center font-mono font-bold focus:outline-none border-transparent text-xs text-gray-400 focus:text-cyan-400 hover:text-gray-200 transition-colors cursor-text"
+                          maxLength={3}
+                      />
+                    </div>
+                  ))}
+              </div>
+              <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center bg-gray-800/50 border-t border-gray-700/30`}>
+                 <span className="text-[8px] text-gray-500 font-bold">DUR</span>
               </div>
             </div>
 
-            <div className={`flex overflow-x-auto pb-2 tab-scroll border border-gray-700 bg-gray-900 rounded-r-lg ${isZoomed ? '' : 'w-full'}`}>
+            <div className={`flex overflow-x-auto pb-2 tab-scroll border border-gray-700/50 bg-gray-900 rounded-r-lg ${isZoomed ? '' : 'w-full'}`}>
                  <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
                     {barsToRender.map((_, barOffset) => {
                         const actualBarIdx = editRowStartBarIndex + barOffset;
@@ -497,33 +543,38 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                     key={`${chain.col}-${chain.str}-${idx}`}
                                     d={`M ${startXPercent} ${y - 4} Q ${midX} ${ctrlY} ${endXPercent} ${y - 4}`}
                                     fill="none"
-                                    stroke="#cbd5e1" // Slate-300
-                                    strokeWidth="2"
+                                    stroke="#94a3b8" // Slate-400
+                                    strokeWidth="1.5"
                                     strokeLinecap="round"
-                                 />
+                                    className="hover:stroke-cyan-400 cursor-pointer transition-colors duration-200"
+                                    style={{ pointerEvents: 'auto' }}
+                                    onDoubleClick={() => onRemoveConnectionChain?.(chain.col, chain.endCol, chain.str)}
+                                 >
+                                    <title>Double click to remove</title>
+                                 </path>
                              )
                         });
 
                         return (
                             <div key={actualBarIdx} 
-                                 className={`flex flex-col relative border-r border-gray-600 last:border-0 transition-colors duration-200 
+                                 className={`flex flex-col relative border-r border-gray-700/50 last:border-0 transition-colors duration-200 
                                     ${isZoomed ? 'flex-shrink-0' : 'flex-1'}
-                                    ${isBarActive ? 'bg-cyan-900/10' : ''}
+                                    ${isBarActive ? 'bg-cyan-500/5' : ''}
                                  `}
                                  style={{ minWidth: isZoomed ? '400px' : '0' }}
                             >
-                                {isBarActive && <div className="absolute inset-0 border-2 border-cyan-500/20 pointer-events-none z-10"></div>}
-                                <div className="absolute top-1 left-2 text-xs text-gray-500 font-mono select-none z-10 font-bold">
+                                {isBarActive && <div className="absolute inset-0 border-2 border-cyan-500/20 pointer-events-none z-10 box-border"></div>}
+                                <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold">
                                     {actualBarIdx + 1}
                                 </div>
 
-                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative mt-6 border-b border-gray-700/50 bg-gray-900/30`}>
+                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative mt-6 border-b border-gray-700/50 bg-gray-800/20`}>
                                    {markersWithBeams.map((marker) => {
                                       const widthPercent = (marker.span / stepsPerBar) * 100;
                                       const chord = chordNames[marker.globalIdx];
                                       return (
                                           <div key={`chord-${marker.globalIdx}`} 
-                                               className="flex items-center justify-center border-r border-gray-700/30 last:border-0 relative group"
+                                               className="flex items-center justify-center border-r border-gray-700/20 last:border-0 relative group"
                                                style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
                                           >
                                               <input
@@ -533,7 +584,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                  onFocus={() => {
                                                      onActiveCellChange({ col: marker.globalIdx, str: 0 })
                                                  }}
-                                                 className="w-full h-full bg-transparent text-center font-bold text-cyan-400 placeholder-gray-700 focus:outline-none text-[10px] focus:bg-gray-800"
+                                                 className="w-full h-full bg-transparent text-center font-bold text-cyan-400 placeholder-gray-700 focus:outline-none text-[10px] focus:bg-gray-800 transition-colors"
                                                  placeholder="+"
                                               />
                                           </div>
@@ -558,7 +609,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
 
                                                 return (
                                                     <div key={globalColIdx} 
-                                                         className="flex-1 relative border-r border-gray-700/50 last:border-0"
+                                                         className="flex-1 relative border-r border-gray-700/30 last:border-0"
                                                          style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
                                                     >
                                                          {strIdx === 0 && isPlayingThisCell && (
@@ -583,7 +634,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                     ))}
                                 </div>
 
-                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-700 bg-gray-900/50 relative`}>
+                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-700/50 bg-gray-800/30 relative`}>
                                      {markersWithBeams.map((marker) => {
                                          const widthPercent = (marker.span / stepsPerBar) * 100;
                                          return (
@@ -612,7 +663,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full bg-gray-900 overflow-y-auto overflow-x-hidden p-8 pb-32">
+    <div className="relative w-full h-full bg-gray-950 overflow-y-auto overflow-x-hidden p-8 pb-32">
         {renderPreviewSection(0, editRowStartBarIndex)}
         {renderEditArea()}
         {renderPreviewSection(editRowStartBarIndex + EDIT_BARS_PER_ROW, totalBars)}
