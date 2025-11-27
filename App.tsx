@@ -18,9 +18,9 @@ const Toast = ({ message, onClose }: { message: string | null, onClose: () => vo
     if (!message) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 bg-cyan-600 text-white px-4 py-3 rounded-lg shadow-xl z-50 flex items-center animate-bounce-in border border-cyan-500/30">
-            <span className="font-bold mr-2 text-lg">✓</span>
-            <span className="font-medium text-sm">{message}</span>
+        <div className="fixed bottom-8 right-8 bg-cyan-500 text-white px-5 py-3 rounded-full shadow-lg shadow-cyan-500/20 z-50 flex items-center animate-bounce-in border border-cyan-400/30 backdrop-blur-md">
+            <span className="font-bold mr-2 text-xl">✓</span>
+            <span className="font-medium text-sm tracking-wide">{message}</span>
         </div>
     );
 };
@@ -699,7 +699,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white font-sans selection:bg-cyan-500/30 selection:text-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-950 text-white font-sans selection:bg-cyan-500/30 selection:text-white overflow-hidden relative">
       <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       
       <ChordLibrary 
@@ -714,60 +714,85 @@ const App: React.FC = () => {
         }}
       />
 
-      <header className="flex-none h-16 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm flex items-center px-6 justify-between z-40 gap-4 shrink-0 shadow-sm">
-        <div className="flex items-center gap-3">
-             <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-cyan-500/20 ring-1 ring-white/10">
-                S
-             </div>
+      <header className="flex-none h-16 bg-gray-900/80 backdrop-blur-md border-b border-white/5 flex items-center px-6 justify-between z-40 gap-4 shrink-0 shadow-lg">
+        <div className="flex items-center gap-6">
              <div className="flex flex-col justify-center">
-                 <div className="flex items-center gap-2">
-                     <h1 className="text-base font-bold text-gray-100 tracking-tight leading-none">SerTab</h1>
-                     <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
-                        Beta 0.1
+                 <div className="flex items-center gap-3">
+                     <h1 className="text-lg font-bold text-white tracking-tight leading-none drop-shadow-sm font-['Courier']">Tab by serum</h1>
+                     <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
+                        Beta 1.0
                      </span>
                  </div>
-                 <div className="text-[10px] text-gray-500 font-['Courier_New'] leading-tight mt-0.5">
-                    development in progress <span className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondioxide</span>
+                 <div className="text-[10px] text-gray-500 font-['Courier'] font-bold leading-tight mt-0.5">
+                    development in progress <a href="https://github.com/silcondiox1de" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondiox1de</a>
                  </div>
+             </div>
+             
+             {/* Divider */}
+             <div className="h-6 w-[1px] bg-white/10 mx-2"></div>
+             
+             {/* Integrated Title Input */}
+             <div className="relative group">
+                <input 
+                    type="text" 
+                    value={songTitle}
+                    onChange={(e) => setSongTitle(e.target.value)}
+                    placeholder="Untitled Project"
+                    className="bg-transparent text-sm font-medium text-gray-300 placeholder-gray-600 focus:outline-none focus:text-white w-64 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
              </div>
         </div>
         
         <div className="flex items-center gap-3 shrink-0">
-             <div className="text-xs font-['Courier_New'] mr-3 flex items-center">
+             <div className="text-xs font-['Courier'] font-bold mr-4 flex items-center bg-gray-800/50 px-3 py-1.5 rounded-full border border-white/5">
                 {saveStatus === 'saving' && <span className="text-yellow-500/80 animate-pulse font-medium">Saving...</span>}
-                {saveStatus === 'saved' && <span className="text-gray-500 flex items-center"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>Saved</span>}
+                {saveStatus === 'saved' && <span className="text-gray-400 flex items-center"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></span>Saved</span>}
                 {saveStatus === 'modified' && <span className="text-gray-500 italic">Unsaved</span>}
              </div>
 
              {hasDraft && (
                  <button 
                     onClick={handleRestoreDraft}
-                    className="h-8 px-3 text-xs font-medium text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 rounded-md border border-cyan-900/50 transition-all"
-                    title="Restore last auto-saved session"
+                    className="h-8 px-3 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 rounded-md border border-cyan-900/50 transition-all"
                 >
                     Restore Session
                 </button>
              )}
 
-             <button 
-                onClick={() => setIsReviewMode(true)}
-                className="h-8 px-4 text-xs font-bold text-gray-200 bg-gray-800 hover:bg-gray-700 hover:text-white rounded-md border border-gray-700 transition-all"
-                title="View as Sheet"
-            >
-                Review
-            </button>
-
-             <button 
-                onClick={handleSaveProject}
-                className="h-8 px-4 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 rounded-md border border-cyan-500 transition-all shadow-md shadow-cyan-900/20"
-                title="Download current project to .json"
-            >
-                Download
-            </button>
+             <div className="flex items-center bg-gray-800/50 p-1 rounded-lg border border-white/5">
+                <button 
+                    onClick={() => setIsReviewMode(true)}
+                    className="h-7 px-3 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 rounded transition-all flex items-center gap-1.5"
+                    title="View as Sheet"
+                >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Review
+                </button>
+                <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+                <button 
+                    onClick={handleSaveProject}
+                    className="h-7 px-3 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all flex items-center gap-1.5"
+                    title="Download current project to .json"
+                >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                </button>
+             </div>
         </div>
       </header>
 
-      <section className="flex-none shrink-0 z-30">
+      <section className="flex-none shrink-0 z-30 pt-4 px-4 pb-2">
           <Controls
             isPlaying={isPlaying}
             bpm={bpm}
@@ -793,19 +818,13 @@ const App: React.FC = () => {
           />
       </section>
 
-      <section className="flex-none shrink-0 bg-gray-900/50 border-b border-gray-800 py-3 flex justify-center z-10">
-          <input 
-              type="text" 
-              value={songTitle}
-              onChange={(e) => setSongTitle(e.target.value)}
-              placeholder="Song Title"
-              className="bg-transparent text-center text-xl font-bold text-gray-200 placeholder-gray-700 focus:outline-none border-b-2 border-transparent focus:border-cyan-500/50 hover:border-gray-800 transition-all w-auto min-w-[300px]"
-          />
-      </section>
-
-      <main className="flex-1 relative overflow-hidden bg-gray-950">
-        <div className="absolute inset-0 opacity-5 pointer-events-none" 
-             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #6b7280 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+      <main className="flex-1 relative overflow-hidden">
+        {/* Background Texture */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+             style={{ 
+                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                 maskImage: 'linear-gradient(to bottom, black, transparent)'
+             }}>
         </div>
 
         <div className="absolute inset-0 pb-12 pt-0">
@@ -834,7 +853,7 @@ const App: React.FC = () => {
              )}
         </div>
 
-        <div className="absolute bottom-3 right-4 text-[10px] text-gray-700 font-['Courier_New'] pointer-events-none select-none z-50">
+        <div className="absolute bottom-3 right-4 text-[10px] text-gray-700 font-['Courier'] font-bold pointer-events-none select-none z-50">
            Tool belongs to Serum AI. All rights reserved.
         </div>
       </main>

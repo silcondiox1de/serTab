@@ -403,7 +403,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
          <div className="space-y-4">
             {Array.from({length: totalSystems}).map((_, i) => renderSystem(i))}
          </div>
-         <div className="mt-20 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 font-['Courier_New']">
+         <div className="mt-20 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 font-['Courier'] font-bold">
            Generated with SerTab • Tool belongs to Serum AI. All rights reserved. No commercial use.
          </div>
       </div>

@@ -13,8 +13,8 @@ interface DurationMarkerProps {
 
 const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widthPercent, span, beam8, beam16 }) => {
   const isBeamed = beam8.left || beam8.right;
-  const beamClass = "bg-gray-500 group-hover:bg-cyan-400 transition-colors";
-  const strokeClass = "stroke-gray-500 group-hover:stroke-cyan-400 transition-colors";
+  const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
+  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
 
   // Calculate the center position of the note head relative to the container
   const singleStepWidth = 100 / span;
@@ -118,7 +118,7 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widt
          </div>
          
          {/* Right Border separator */}
-         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-gray-700/20 pointer-events-none"></div>
+         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none"></div>
       </div>
   )
 };
@@ -171,11 +171,11 @@ export const TabGrid: React.FC<TabGridProps> = ({
   const DIM = {
       CHORD_ROW_MARGIN: 'h-6',
       CHORD_ROW_HEIGHT: 'h-8',
-      STRING_HEIGHT: 'h-6', // 24px
+      STRING_HEIGHT: 'h-8', // increased for better touch target and visuals
       DUR_ROW_HEIGHT: 'h-8',
   };
 
-  const STRING_H_PX = 24;
+  const STRING_H_PX = 32; // Matches h-8
   
   const totalBars = Math.ceil(columns.length / stepsPerBar);
   const displayBars: TabColumn[][] = [];
@@ -320,8 +320,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
     onEditRowStartChange(newStart);
   };
 
-  // Pre-process chains outside loop to avoid re-calc per bar (though bars are loop, doing it once for all bars displayed in edit area)
-  // Actually we need to do it once per render
+  // Pre-process chains outside loop
   const chains: { col: number; endCol: number; str: number }[] = [];
   {
       const used = new Set<string>();
@@ -380,21 +379,34 @@ export const TabGrid: React.FC<TabGridProps> = ({
         lines.push(barsToRender.slice(i, i + PREVIEW_BARS_PER_ROW));
     }
     return (
-        <div className="flex flex-col gap-6 opacity-60 hover:opacity-100 transition-opacity duration-300 mb-10 select-none">
+        <div className="flex flex-col gap-3 opacity-80 hover:opacity-100 transition-opacity duration-300 mb-8 select-none">
             {lines.map((lineBars, lineIdx) => {
                 const lineStartBarIdx = startBar + (lineIdx * PREVIEW_BARS_PER_ROW);
                 return (
-                    <div key={`prev-line-${lineStartBarIdx}`} className="relative pl-8">
-                        <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col text-[10px] font-bold text-gray-500 py-1 items-center h-24">
-                             {tuning.map((t, i) => <div key={i} className="flex-1 flex items-center justify-center w-full">{t}</div>)}
+                    <div key={`prev-line-${lineStartBarIdx}`} className="relative pl-10">
+                        {/* Row Labels */}
+                        <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-[9px] font-bold text-gray-600 py-1.5 items-center select-none">
+                             {tuning.map((t, i) => <div key={i} className="flex-1 flex items-center justify-center">{t}</div>)}
                         </div>
-                        <div className="grid grid-cols-8 w-full bg-gray-900 border border-gray-700 rounded-r overflow-hidden cursor-pointer shadow-sm h-24" 
-                             onClick={() => handlePreviewClick(lineStartBarIdx)}>
+
+                        <div className="flex w-full h-20 rounded-lg overflow-hidden border border-gray-800 bg-gray-900/50 shadow-sm">
                              {lineBars.map((bar, barOffset) => {
                                  const actualBarIdx = lineStartBarIdx + barOffset;
+                                 const isActiveWindow = actualBarIdx >= editRowStartBarIndex && actualBarIdx < editRowStartBarIndex + EDIT_BARS_PER_ROW;
+                                 
                                  return (
-                                     <div key={actualBarIdx} className="relative border-r border-gray-800 last:border-0 h-full">
-                                        <div className="absolute top-0.5 left-1 text-[9px] text-gray-600 font-mono pointer-events-none font-bold">{actualBarIdx + 1}</div>
+                                     <div key={actualBarIdx} 
+                                          onClick={() => handlePreviewClick(lineStartBarIdx)}
+                                          className={`relative border-r border-gray-800 last:border-0 flex-1 h-full cursor-pointer transition-colors
+                                            ${isActiveWindow ? 'bg-gray-800 shadow-[inset_0_0_20px_rgba(34,211,238,0.05)]' : 'hover:bg-gray-800/50'}
+                                          `}
+                                     >
+                                        <div className={`absolute top-0.5 left-1 text-[9px] font-mono pointer-events-none font-bold ${isActiveWindow ? 'text-cyan-500' : 'text-gray-700'}`}>
+                                            {actualBarIdx + 1}
+                                        </div>
+                                        {/* Active Window Indicator Line */}
+                                        {isActiveWindow && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500/50"></div>}
+                                        
                                         <div className="flex flex-col w-full h-full py-1">
                                             {Array.from({length: instrument.stringCount}).map((_, sIdx) => (
                                                 <div key={sIdx} className="flex-1 flex w-full items-center relative">
@@ -402,9 +414,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                     {bar.map((col, cIdx) => (
                                                         <div key={cIdx} className="flex-1 flex items-center justify-center z-10">
                                                             {col[sIdx] !== -1 && (
-                                                                <span className="text-[10px] text-gray-300 bg-gray-900 px-0.5 font-mono leading-none">
-                                                                    {col[sIdx]}
-                                                                </span>
+                                                                <div className={`w-1 h-1 rounded-full ${isActiveWindow ? 'bg-cyan-400' : 'bg-gray-500'}`}></div>
                                                             )}
                                                         </div>
                                                     ))}
@@ -414,8 +424,9 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                      </div>
                                  )
                              })}
+                             {/* Empty slots filler */}
                              {Array.from({length: PREVIEW_BARS_PER_ROW - lineBars.length}).map((_, i) => (
-                                 <div key={`empty-${i}`} className="bg-gray-900/50 border-r border-gray-800/30 last:border-0"></div>
+                                 <div key={`empty-${i}`} className="flex-1 bg-gray-950/30 border-r border-gray-900 last:border-0"></div>
                              ))}
                         </div>
                     </div>
@@ -432,37 +443,50 @@ export const TabGrid: React.FC<TabGridProps> = ({
     return (
         <div 
             ref={editAreaRef}
-            className="relative pl-14 mb-8 bg-[#161e2e] p-4 rounded-xl border border-gray-700/50 shadow-2xl transition-all duration-300 ring-1 ring-white/5"
+            className="relative pl-14 mb-8"
         >
-            <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-cyan-900 to-blue-900 text-cyan-100 text-[10px] uppercase tracking-widest font-bold rounded-full shadow-lg border border-cyan-800/50 z-30">
-                Editing Section
+            <div className="absolute -top-3 left-4 px-3 py-1 bg-cyan-600 text-white text-[10px] uppercase tracking-widest font-bold rounded shadow-lg z-30 font-['Courier']">
+                Editor
             </div>
 
-            {/* Left Sidebar Control Panel Style */}
-            <div className="absolute left-0 top-4 bottom-4 w-14 z-20 flex flex-col bg-gray-800 border-r border-gray-700/50 rounded-l-xl shadow-md">
-              <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-700/30`}></div>
-              <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center bg-gray-800/50`}>
-                  <span className="text-[8px] text-gray-500 font-bold">CHD</span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center py-1 bg-gray-900/30">
-                  {tuning.map((label, i) => (
-                    <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1`}>
-                      <input 
-                          type="text"
-                          value={label}
-                          onChange={(e) => onTuningChange(i, e.target.value)}
-                          className="w-full bg-transparent text-center font-mono font-bold focus:outline-none border-transparent text-xs text-gray-400 focus:text-cyan-400 hover:text-gray-200 transition-colors cursor-text"
-                          maxLength={3}
-                      />
+            {/* "Headstock" Sidebar */}
+            <div className="absolute left-0 top-0 bottom-0 w-14 z-20 flex flex-col">
+                {/* Spacer for chords */}
+                <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0`}></div>
+                
+                {/* Main Headstock Block */}
+                <div className="flex-1 bg-gray-800 rounded-l-lg border border-gray-700 border-r-0 shadow-lg flex flex-col py-1 overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+                    
+                    {/* Top Label */}
+                    <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-b border-gray-700/50`}>
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Chd</span>
                     </div>
-                  ))}
-              </div>
-              <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center bg-gray-800/50 border-t border-gray-700/30`}>
-                 <span className="text-[8px] text-gray-500 font-bold">DUR</span>
-              </div>
+
+                    {/* Tuning Inputs */}
+                    <div className="flex-1 flex flex-col justify-center relative">
+                        {tuning.map((label, i) => (
+                            <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1 relative group`}>
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-600 rounded-full -ml-1 shadow-inner"></div>
+                                <input 
+                                    type="text"
+                                    value={label}
+                                    onChange={(e) => onTuningChange(i, e.target.value)}
+                                    className="w-full bg-transparent text-center font-bold font-mono focus:outline-none border-transparent text-sm text-gray-300 focus:text-cyan-400 hover:text-white transition-colors cursor-text z-10"
+                                    maxLength={2}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Bottom Label */}
+                    <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-t border-gray-700/50`}>
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Dur</span>
+                    </div>
+                </div>
             </div>
 
-            <div className={`flex overflow-x-auto pb-2 tab-scroll border border-gray-700/50 bg-gray-900 rounded-r-lg ${isZoomed ? '' : 'w-full'}`}>
+            <div className={`flex overflow-x-auto pb-2 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl ${isZoomed ? '' : 'w-full'}`}>
                  <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
                     {barsToRender.map((_, barOffset) => {
                         const actualBarIdx = editRowStartBarIndex + barOffset;
@@ -517,7 +541,6 @@ export const TabGrid: React.FC<TabGridProps> = ({
 
                         // Calculate Connections SVG (Using Chains)
                         const connectionPaths: React.ReactElement[] = [];
-                        // Filter chains that start in this bar
                         const barChains = chains.filter(c => c.col >= barStartColIdx && c.col < barStartColIdx + stepsPerBar);
                         
                         barChains.forEach((chain, idx) => {
@@ -543,11 +566,11 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                     key={`${chain.col}-${chain.str}-${idx}`}
                                     d={`M ${startXPercent} ${y - 4} Q ${midX} ${ctrlY} ${endXPercent} ${y - 4}`}
                                     fill="none"
-                                    stroke="#94a3b8" // Slate-400
-                                    strokeWidth="1.5"
+                                    stroke="#cbd5e1"
+                                    strokeWidth="2"
                                     strokeLinecap="round"
                                     className="hover:stroke-cyan-400 cursor-pointer transition-colors duration-200"
-                                    style={{ pointerEvents: 'auto' }}
+                                    style={{ pointerEvents: 'auto', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))' }}
                                     onDoubleClick={() => onRemoveConnectionChain?.(chain.col, chain.endCol, chain.str)}
                                  >
                                     <title>Double click to remove</title>
@@ -557,24 +580,26 @@ export const TabGrid: React.FC<TabGridProps> = ({
 
                         return (
                             <div key={actualBarIdx} 
-                                 className={`flex flex-col relative border-r border-gray-700/50 last:border-0 transition-colors duration-200 
+                                 className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 
                                     ${isZoomed ? 'flex-shrink-0' : 'flex-1'}
-                                    ${isBarActive ? 'bg-cyan-500/5' : ''}
+                                    ${isBarActive ? 'bg-gray-800/30' : ''}
                                  `}
                                  style={{ minWidth: isZoomed ? '400px' : '0' }}
                             >
-                                {isBarActive && <div className="absolute inset-0 border-2 border-cyan-500/20 pointer-events-none z-10 box-border"></div>}
-                                <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold">
+                                <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold bg-[#111827] px-1 rounded">
                                     {actualBarIdx + 1}
                                 </div>
 
-                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative mt-6 border-b border-gray-700/50 bg-gray-800/20`}>
+                                {/* Top Spacer aligns with headstock top margin */}
+                                <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
+
+                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative border-b border-gray-800 bg-gray-900/50`}>
                                    {markersWithBeams.map((marker) => {
                                       const widthPercent = (marker.span / stepsPerBar) * 100;
                                       const chord = chordNames[marker.globalIdx];
                                       return (
                                           <div key={`chord-${marker.globalIdx}`} 
-                                               className="flex items-center justify-center border-r border-gray-700/20 last:border-0 relative group"
+                                               className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group"
                                                style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
                                           >
                                               <input
@@ -600,8 +625,23 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                         </svg>
                                     </div>
 
-                                    {Array.from({ length: instrument.stringCount }).map((_, strIdx) => (
+                                    {Array.from({ length: instrument.stringCount }).map((_, strIdx) => {
+                                        // Visual string thickness calculation
+                                        // Lower strings (higher index) should be thicker
+                                        const thickness = 1 + (strIdx / (instrument.stringCount - 1)) * 2;
+                                        
+                                        return (
                                         <div key={strIdx} className={`flex ${DIM.STRING_HEIGHT} relative last:border-0`}>
+                                            {/* String Line Background */}
+                                            <div className="absolute inset-x-0 bg-gray-600 z-0 pointer-events-none" 
+                                                 style={{ 
+                                                     height: `${thickness}px`, 
+                                                     top: '50%', 
+                                                     marginTop: `-${thickness/2}px`,
+                                                     opacity: 0.3 + (strIdx * 0.1) // Lower strings slightly more opaque
+                                                 }}>
+                                            </div>
+
                                             {markersWithBeams.map((marker) => {
                                                 const globalColIdx = marker.globalIdx;
                                                 const widthPercent = (marker.span / stepsPerBar) * 100;
@@ -609,14 +649,14 @@ export const TabGrid: React.FC<TabGridProps> = ({
 
                                                 return (
                                                     <div key={globalColIdx} 
-                                                         className="flex-1 relative border-r border-gray-700/30 last:border-0"
+                                                         className="flex-1 relative border-r border-gray-800 last:border-0"
                                                          style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
                                                     >
                                                          {strIdx === 0 && isPlayingThisCell && (
-                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full z-40 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
+                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
                                                         )}
                                                         {isPlayingThisCell && (
-                                                            <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-red-500/50 z-30 pointer-events-none"></div>
+                                                            <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-cyan-500/50 z-30 pointer-events-none"></div>
                                                         )}
                                                         <TabCell
                                                             note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
@@ -631,10 +671,10 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                 );
                                             })}
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
 
-                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-700/50 bg-gray-800/30 relative`}>
+                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-800 bg-gray-900/50 relative`}>
                                      {markersWithBeams.map((marker) => {
                                          const widthPercent = (marker.span / stepsPerBar) * 100;
                                          return (
@@ -663,7 +703,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full bg-gray-950 overflow-y-auto overflow-x-hidden p-8 pb-32">
+    <div className="relative w-full h-full p-8 pb-32 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
         {renderPreviewSection(0, editRowStartBarIndex)}
         {renderEditArea()}
         {renderPreviewSection(editRowStartBarIndex + EDIT_BARS_PER_ROW, totalBars)}
