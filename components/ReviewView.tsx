@@ -1,0 +1,405 @@
+import React from 'react';
+import { TabColumn, InstrumentConfig, NoteDuration, TimeSignatureType, TIME_SIGNATURES } from '../types';
+
+interface ReviewViewProps {
+  title: string;
+  bpm: number;
+  timeSignature: TimeSignatureType;
+  instrument: InstrumentConfig;
+  tuning: string[];
+  columns: TabColumn[];
+  durations: NoteDuration[];
+  chordNames: (string | null)[];
+  connections?: { col: number; str: number }[];
+  onClose: () => void;
+}
+
+const getDurationSteps = (d: NoteDuration): number => {
+  switch(d) {
+    case '1': return 16;
+    case '2': return 8;
+    case '4': return 4;
+    case '8': return 2;
+    case '16': return 1;
+    default: return 2;
+  }
+};
+
+const ReviewDurationMarker = ({ duration, beam8, beam16 }: { duration: NoteDuration, beam8: {left: boolean, right: boolean}, beam16: {left: boolean, right: boolean} }) => {
+    const stroke = "black";
+    const strokeWidth = 1.5;
+    const height = 24;
+    const cx = 10;
+    
+    // Beam Y positions
+    const isBeamed = beam8.left || beam8.right;
+
+    switch (duration) {
+          case '1': // Whole Note: Circle
+              return <circle cx={cx} cy={height/2} r="3.5" stroke={stroke} strokeWidth={strokeWidth} fill="none" />;
+          case '2': // Half Note: Stem + Circle head
+               return (
+                  <g>
+                    <line x1={cx} y1={0} x2={cx} y2={height - 5} stroke={stroke} strokeWidth={strokeWidth} />
+                    <circle cx={cx} cy={height - 3} r="3" stroke={stroke} strokeWidth={strokeWidth} fill="none" />
+                  </g>
+               );
+          case '4': // Quarter Note: Just Stem
+              return <line x1={cx} y1={0} x2={cx} y2={height} stroke={stroke} strokeWidth={strokeWidth} />;
+          case '8': // 8th Note
+              if (isBeamed) {
+                  return <line x1={cx} y1={0} x2={cx} y2={24} stroke={stroke} strokeWidth={strokeWidth} />;
+              }
+              return (
+                  <g>
+                    <line x1={cx} y1={0} x2={cx} y2={height} stroke={stroke} strokeWidth={strokeWidth} />
+                    <path d={`M ${cx} ${height} Q ${cx+6} ${height-4} ${cx+6} ${height-10}`} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+                  </g>
+              );
+          case '16': // 16th Note
+              if (isBeamed) {
+                  return <line x1={cx} y1={0} x2={cx} y2={24} stroke={stroke} strokeWidth={strokeWidth} />;
+              }
+              return (
+                   <g>
+                    <line x1={cx} y1={0} x2={cx} y2={height} stroke={stroke} strokeWidth={strokeWidth} />
+                    <path d={`M ${cx} ${height} Q ${cx+6} ${height-4} ${cx+6} ${height-10}`} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+                    <path d={`M ${cx} ${height-6} Q ${cx+6} ${height-10} ${cx+6} ${height-16}`} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+                  </g>
+              );
+          default: 
+              return <line x1={cx} y1={0} x2={cx} y2={height} stroke={stroke} strokeWidth={strokeWidth} />;
+    }
+};
+
+export const ReviewView: React.FC<ReviewViewProps> = ({
+  title,
+  bpm,
+  timeSignature,
+  instrument,
+  tuning,
+  columns,
+  durations,
+  chordNames,
+  connections = [],
+  onClose
+}) => {
+  const stepsPerBar = TIME_SIGNATURES[timeSignature].stepsPerBar;
+  const BARS_PER_SYSTEM = 4;
+  
+  const totalBars = Math.ceil(columns.length / stepsPerBar);
+  const totalSystems = Math.ceil(totalBars / BARS_PER_SYSTEM);
+
+  // Pre-process chains
+  const chains: { col: number; endCol: number; str: number }[] = [];
+  {
+      const used = new Set<string>();
+      const sorted = [...connections].sort((a,b) => a.col - b.col);
+      const connMap = new Set(connections.map(c => `${c.col},${c.str}`));
+
+      sorted.forEach(conn => {
+          const key = `${conn.col},${conn.str}`;
+          if (used.has(key)) return;
+
+          let start = conn.col;
+          let str = conn.str;
+          
+          let nextNoteIdx = -1;
+          for(let i = start + 1; i < columns.length; i++) {
+              if (columns[i][str] !== -1) {
+                  nextNoteIdx = i;
+                  break;
+              }
+          }
+          if (nextNoteIdx === -1) return;
+
+          used.add(key);
+          let currentEnd = nextNoteIdx;
+
+          // Try to chain
+          while(true) {
+              const nextKey = `${currentEnd},${str}`;
+              if (connMap.has(nextKey)) {
+                  used.add(nextKey);
+                  let farNoteIdx = -1;
+                  for(let i = currentEnd + 1; i < columns.length; i++) {
+                      if (columns[i][str] !== -1) {
+                          farNoteIdx = i;
+                          break;
+                      }
+                  }
+                  if (farNoteIdx !== -1) {
+                      currentEnd = farNoteIdx;
+                  } else {
+                      break;
+                  }
+              } else {
+                  break;
+              }
+          }
+          chains.push({ col: start, endCol: currentEnd, str });
+      });
+  }
+  
+  const renderSystem = (systemIndex: number) => {
+    const startBar = systemIndex * BARS_PER_SYSTEM;
+    const endBar = Math.min(startBar + BARS_PER_SYSTEM, totalBars);
+    
+    const systemBars = [];
+    for (let b = startBar; b < endBar; b++) {
+      const startCol = b * stepsPerBar;
+      const endCol = startCol + stepsPerBar;
+      systemBars.push({
+        barIndex: b,
+        cols: columns.slice(startCol, endCol),
+        chords: chordNames.slice(startCol, endCol),
+        durs: durations.slice(startCol, endCol)
+      });
+    }
+
+    if (systemBars.length === 0) return null;
+
+    return (
+      <div key={systemIndex} className="mb-14 break-inside-avoid">
+        {/* Chords */}
+        <div className="flex w-full h-6 mb-1 relative">
+           {systemBars.map((bar, bIdx) => (
+             <div key={bIdx} className="flex-1 flex border-l border-transparent relative">
+                {bar.chords.map((chord, cIdx) => (
+                  chord ? (
+                    <div 
+                      key={cIdx} 
+                      className="absolute transform -translate-x-1/2 text-sm font-bold text-blue-800"
+                      style={{ left: `${(cIdx / stepsPerBar) * 100}%` }}
+                    >
+                      {chord}
+                    </div>
+                  ) : null
+                ))}
+             </div>
+           ))}
+        </div>
+
+        {/* Staff */}
+        <div className="relative">
+          <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between py-1 text-[10px] text-gray-500 font-mono">
+             {tuning.map((t, i) => <span key={i} className="leading-none">{t}</span>)}
+          </div>
+
+          <div className="border-l-2 border-black flex w-full">
+            {systemBars.map((bar, bIdx) => {
+              const startColIndex = bar.barIndex * stepsPerBar;
+              
+              // Connections logic (Using Chains)
+              const barChains = chains.filter(c => c.col >= startColIndex && c.col < startColIndex + stepsPerBar);
+              const connectionPaths: React.ReactElement[] = [];
+
+              barChains.forEach((chain, idx) => {
+                  const localColIdx = chain.col - startColIndex;
+                  
+                  // In ReviewView, notes are positioned exactly on the grid steps, centered at +0.5
+                  // Start X
+                  const startXPercent = ((localColIdx + 0.5) / stepsPerBar) * 100;
+                  
+                  // End X based on distance
+                  const distSteps = chain.endCol - chain.col;
+                  const endXPercent = startXPercent + (distSteps / stepsPerBar) * 100;
+
+                  // Y pos
+                  const y = chain.str * 16 + 8; // Center of row
+                  
+                  const midX = (startXPercent + endXPercent) / 2;
+                  const ctrlY = y - 8;
+
+                  connectionPaths.push(
+                       <path 
+                          key={`c-${idx}`}
+                          d={`M ${startXPercent} ${y - 4} Q ${midX} ${ctrlY} ${endXPercent} ${y - 4}`}
+                          fill="none"
+                          stroke="black"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                       />
+                  );
+              });
+
+              // Pre-calculate markers for beams rendering (not needed for connections anymore)
+              const markers: any[] = [];
+              let i = 0;
+              while (i < stepsPerBar) {
+                  const d = bar.durs[i] || '8';
+                  const span = getDurationSteps(d);
+                  markers.push({ colIdx: i, duration: d, span });
+                  i += span;
+              }
+
+              const markersWithBeams = markers.map((m, idx) => {
+                  const is8or16 = m.duration === '8' || m.duration === '16';
+                  const is16 = m.duration === '16';
+                  const currentBeat = Math.floor(m.colIdx / 4);
+                  let beam8Right = false; let beam16Right = false;
+                  const next = markers[idx + 1];
+                  if (next && Math.floor(next.colIdx / 4) === currentBeat) {
+                       if ((is8or16) && (next.duration === '8' || next.duration === '16')) beam8Right = true;
+                       if ((is16) && (next.duration === '16')) beam16Right = true;
+                  }
+                  let beam8Left = false; let beam16Left = false;
+                  const prev = markers[idx - 1];
+                  if (prev && Math.floor(prev.colIdx / 4) === currentBeat) {
+                      if ((is8or16) && (prev.duration === '8' || prev.duration === '16')) beam8Left = true;
+                      if ((is16) && (prev.duration === '16')) beam16Left = true;
+                  }
+                  return { ...m, beam8: {left: beam8Left, right: beam8Right}, beam16: {left: beam16Left, right: beam16Right} };
+              });
+
+              return (
+                <div key={bIdx} className="flex-1 border-r-2 border-black relative">
+                  <div className="absolute -top-5 left-0 text-[10px] font-bold text-gray-500 font-mono">
+                    {bar.barIndex + 1}
+                  </div>
+                  <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
+                    {Array.from({length: instrument.stringCount}).map((_, i) => (
+                      <div key={i} className="w-full h-[1px] bg-gray-300"></div>
+                    ))}
+                  </div>
+
+                  <div className="relative w-full h-full flex flex-col justify-between py-0.5 z-10">
+                     {/* Overlay for connections */}
+                     <div className="absolute inset-0 pointer-events-none overflow-visible z-20">
+                         <svg width="100%" height="100%" viewBox={`0 0 100 ${instrument.stringCount * 16}`} preserveAspectRatio="none" className="overflow-visible">
+                             {connectionPaths}
+                         </svg>
+                     </div>
+
+                     {Array.from({length: instrument.stringCount}).map((_, strIdx) => (
+                       <div key={strIdx} className="relative h-4 flex items-center w-full">
+                         {bar.cols.map((col, colIdx) => {
+                            const note = col[strIdx];
+                            if (note === -1) return null;
+                            return (
+                              <div 
+                                key={colIdx} 
+                                className="absolute transform -translate-x-1/2 bg-white px-0.5 text-sm font-bold font-mono text-black leading-none z-10"
+                                style={{ left: `${((colIdx + 0.5) / stepsPerBar) * 100}%` }}
+                              >
+                                {note}
+                              </div>
+                            );
+                         })}
+                       </div>
+                     ))}
+                  </div>
+
+                  <div className="absolute top-full left-0 w-full h-8 mt-1 pointer-events-none">
+                      {markersWithBeams.map((m, mIdx) => {
+                          const widthPercent = (m.span / stepsPerBar) * 100;
+                          const leftPercent = (m.colIdx / stepsPerBar) * 100;
+                          const singleStepWidth = 100 / m.span;
+                          const centerPercent = singleStepWidth / 2;
+                          const isBeamed = m.beam8.left || m.beam8.right;
+                          const beamClass = "bg-black";
+
+                          return (
+                            <div 
+                              key={mIdx}
+                              className="absolute top-0 h-full"
+                              style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                            >
+                               {/* Beams */}
+                               {isBeamed && (
+                                  <div className="absolute inset-0">
+                                      <div className="absolute bottom-0 w-full h-[2px]">
+                                          {m.beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>}
+                                          {m.beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>}
+                                      </div>
+                                      {m.duration === '16' && (
+                                          <div className="absolute bottom-[4px] w-full h-[2px]">
+                                              {m.beam16.left ? <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div> : m.beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ right: `calc(${100 - centerPercent}% - 1px)`, width: '8px' }}></div>}
+                                              {m.beam16.right ? <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div> : m.beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, width: '8px' }}></div>}
+                                          </div>
+                                      )}
+                                  </div>
+                               )}
+                               <div className="absolute top-0 bottom-0 flex items-center justify-center" style={{ left: 0, width: `${singleStepWidth}%` }}>
+                                   <svg width="20" height="24" viewBox="0 0 20 24" className="overflow-visible">
+                                      <ReviewDurationMarker duration={m.duration} beam8={m.beam8} beam16={m.beam16} />
+                                   </svg>
+                               </div>
+                            </div>
+                          );
+                      })}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {systemBars.length < BARS_PER_SYSTEM && (
+               <div className="flex-[0_0_auto]" style={{ width: `${(BARS_PER_SYSTEM - systemBars.length) * 25}%` }}></div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-200 z-[100] overflow-y-auto print:static print:overflow-visible print:bg-white print:h-auto print:block">
+      <style>{`
+        @media print {
+            @page {
+                size: auto;
+                margin: 0mm;
+            }
+            body, html, #root {
+                overflow: visible !important;
+                height: auto !important;
+                width: auto !important;
+                background-color: white !important;
+                color: black !important;
+                display: block !important;
+            }
+        }
+      `}</style>
+      {/* Navbar */}
+      <div className="sticky top-0 bg-white border-b border-gray-300 px-6 py-3 flex justify-between items-center shadow-sm z-50 print:hidden">
+         <div className="flex items-center space-x-4">
+            <h2 className="font-bold text-gray-800 text-lg">Review Mode</h2>
+            <div className="h-4 w-[1px] bg-gray-300"></div>
+            <span className="text-sm text-gray-600">{title}</span>
+         </div>
+         <div className="flex space-x-3">
+            <button 
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-bold border border-gray-300 transition-colors flex items-center"
+            >
+              Print
+            </button>
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-bold shadow transition-colors"
+            >
+              Back to Editor
+            </button>
+         </div>
+      </div>
+      {/* Paper */}
+      <div className="max-w-[850px] mx-auto bg-white min-h-screen my-8 shadow-xl p-12 print:shadow-none print:my-0 print:mx-auto print:w-full print:p-8 print:max-w-none">
+         <div className="border-b-2 border-gray-800 pb-6 mb-10 text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-tight">{title}</h1>
+            <div className="flex justify-center space-x-8 text-sm text-gray-600 font-mono uppercase tracking-widest mt-4">
+               <div><span className="font-bold text-gray-400 block text-[10px]">Instrument</span>{instrument.name}</div>
+               <div><span className="font-bold text-gray-400 block text-[10px]">Tuning</span>{tuning.join(' ')}</div>
+               <div><span className="font-bold text-gray-400 block text-[10px]">Tempo</span>{bpm} BPM</div>
+               <div><span className="font-bold text-gray-400 block text-[10px]">Time Sig</span>{timeSignature}</div>
+            </div>
+         </div>
+         <div className="space-y-4">
+            {Array.from({length: totalSystems}).map((_, i) => renderSystem(i))}
+         </div>
+         <div className="mt-20 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 font-mono">
+           Generated with SerumTab • Tool belongs to Serum AI. All rights reserved. No commercial use.
+         </div>
+      </div>
+    </div>
+  );
+};
