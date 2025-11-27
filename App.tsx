@@ -63,6 +63,9 @@ const App: React.FC = () => {
 
   // Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  // Import/Export Refs
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Default to 4 bars of 4/4 (64 steps)
   const initialTsConfig = TIME_SIGNATURES['4/4'];
@@ -431,6 +434,42 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target?.result as string;
+            const project = JSON.parse(content);
+            
+            // Basic structural validation
+            if (project && Array.isArray(project.columns) && Array.isArray(project.durations)) {
+                if (window.confirm("Importing a project will overwrite the current session. Continue?")) {
+                    loadProjectState(project);
+                    setToastMessage("Project Imported");
+                }
+            } else {
+                alert("Invalid project file: Missing core data.");
+            }
+        } catch (error) {
+            console.error("Failed to parse project file:", error);
+            alert("Failed to read project file. Please ensure it is a valid JSON file exported from SerTab.");
+        }
+        
+        // Reset file input to allow re-importing same file if needed
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+    reader.readAsText(file);
+  };
+
   const loadProjectState = (project: SavedProject) => {
     audioEngine.stop();
     setIsPlaying(false);
@@ -714,7 +753,7 @@ const App: React.FC = () => {
         }}
       />
 
-      <header className="flex-none h-16 bg-gray-900/80 backdrop-blur-md border-b border-white/5 flex items-center px-6 justify-between z-40 gap-4 shrink-0 shadow-lg">
+      <header className="flex-none h-20 bg-gray-900/90 backdrop-blur-xl border-b border-white/5 flex items-center px-8 justify-between z-40 gap-8 shrink-0 shadow-2xl">
         <div className="flex items-center gap-6">
              <div className="flex flex-col justify-center">
                  <div className="flex items-center gap-3">
@@ -729,7 +768,7 @@ const App: React.FC = () => {
              </div>
              
              {/* Divider */}
-             <div className="h-6 w-[1px] bg-white/10 mx-2"></div>
+             <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
              
              {/* Integrated Title Input */}
              <div className="relative group">
@@ -738,14 +777,14 @@ const App: React.FC = () => {
                     value={songTitle}
                     onChange={(e) => setSongTitle(e.target.value)}
                     placeholder="Untitled Project"
-                    className="bg-transparent text-sm font-medium text-gray-300 placeholder-gray-600 focus:outline-none focus:text-white w-64 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
+                    className="bg-transparent text-base font-medium text-gray-300 placeholder-gray-600 focus:outline-none focus:text-white w-72 px-3 py-1.5 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
              </div>
         </div>
         
-        <div className="flex items-center gap-3 shrink-0">
-             <div className="text-xs font-['Courier'] font-bold mr-4 flex items-center bg-gray-800/50 px-3 py-1.5 rounded-full border border-white/5">
+        <div className="flex items-center gap-6 shrink-0">
+             <div className="text-xs font-['Courier'] font-bold flex items-center bg-gray-800/50 px-4 py-2 rounded-full border border-white/5">
                 {saveStatus === 'saving' && <span className="text-yellow-500/80 animate-pulse font-medium">Saving...</span>}
                 {saveStatus === 'saved' && <span className="text-gray-400 flex items-center"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></span>Saved</span>}
                 {saveStatus === 'modified' && <span className="text-gray-500 italic">Unsaved</span>}
@@ -754,19 +793,19 @@ const App: React.FC = () => {
              {hasDraft && (
                  <button 
                     onClick={handleRestoreDraft}
-                    className="h-8 px-3 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 rounded-md border border-cyan-900/50 transition-all"
+                    className="h-9 px-4 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 rounded-lg border border-cyan-900/50 transition-all"
                 >
                     Restore Session
                 </button>
              )}
 
-             <div className="flex items-center bg-gray-800/50 p-1 rounded-lg border border-white/5">
+             <div className="flex items-center bg-gray-800/50 p-1.5 rounded-xl border border-white/5 gap-1">
                 <button 
                     onClick={() => setIsReviewMode(true)}
-                    className="h-7 px-3 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 rounded transition-all flex items-center gap-1.5"
+                    className="h-8 px-4 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-2"
                     title="View as Sheet"
                 >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                         <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -775,13 +814,26 @@ const App: React.FC = () => {
                     </svg>
                     Review
                 </button>
-                <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+                <div className="w-[1px] h-5 bg-white/10 mx-1"></div>
+                <button 
+                    onClick={handleImportClick}
+                    className="h-8 px-4 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-2"
+                    title="Import project from .json"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </button>
+                <div className="w-[1px] h-5 bg-white/10 mx-1"></div>
                 <button 
                     onClick={handleSaveProject}
-                    className="h-7 px-3 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all flex items-center gap-1.5"
+                    className="h-8 px-4 text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded-lg transition-all flex items-center gap-2"
                     title="Download current project to .json"
                 >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -791,6 +843,15 @@ const App: React.FC = () => {
              </div>
         </div>
       </header>
+      
+      {/* Hidden File Input for Import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept=".json" 
+        className="hidden" 
+      />
 
       <section className="flex-none shrink-0 z-30 pt-4 px-4 pb-2">
           <Controls
