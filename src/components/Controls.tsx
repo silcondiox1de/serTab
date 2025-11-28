@@ -23,7 +23,9 @@ interface ControlsProps {
   onClearTab: () => void;
   onClearBar: () => void;
   onToggleConnection: () => void;
-  onOptimize: () => void; // <--- NEW PROP
+  onOptimize: () => void; // <--- luthier
+  onGenerate: () => void; // <--- riffcomplete
+  isGenerating: boolean; // <--- riffcomplete
 }
 
 // Reusable Select Style Wrapper
@@ -73,7 +75,9 @@ export const Controls: React.FC<ControlsProps> = ({
   onClearTab,
   onClearBar,
   onToggleConnection,
-  onOptimize // <--- NEW DESTRUCTURED PROP
+  onOptimize, // <--- luthier
+  onGenerate, // <--riffcomplete
+  isGenerating // <--riffcomplete
 }) => {
   
   const tempoLabel = TIME_SIGNATURES[timeSignature].tempoBeat === 'dotted-quarter' 
@@ -190,7 +194,7 @@ export const Controls: React.FC<ControlsProps> = ({
                     <span>🎵</span> Chords
                 </button>
                 
-                {/* --- NEW FIX BUTTON --- */}
+                {/* --- luthier BUTTON --- */}
                 <button
                     onClick={onOptimize}
                     className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"
@@ -198,7 +202,33 @@ export const Controls: React.FC<ControlsProps> = ({
                 >
                     <span>✨</span> Fix
                 </button>
-                {/* ---------------------- */}
+                
+              
+              {/* --- riffcompose BUTTON --- */}
+                <button
+                    onClick={onGenerate}
+                    disabled={isGenerating}
+                    className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                        isGenerating 
+                        ? 'text-purple-400 bg-purple-900/20 cursor-wait' 
+                        : 'text-purple-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    title="Generate AI Riff"
+                >
+                    {isGenerating ? (
+                        <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    ) : (
+                        <span>🔮</span>
+                    )}
+                    Generate
+                </button>
+              
+
+
+              
 
                 <Divider />
                 <button
