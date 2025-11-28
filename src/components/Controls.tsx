@@ -31,7 +31,7 @@ const SelectWrapper = ({ label, children }: { label: string, children?: React.Re
         <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-1 px-1">{label}</label>
         <div className="relative group">
             {children}
-            {/* Custom Chevron for better UI */}
+            {/* Custom Chevron */}
             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 group-hover:text-gray-300">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -41,8 +41,9 @@ const SelectWrapper = ({ label, children }: { label: string, children?: React.Re
     </div>
 );
 
+// Added flex-shrink-0 to prevent squishing on mobile
 const Group = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => (
-    <div className={`bg-gray-800/40 backdrop-blur-sm border border-white/5 rounded-xl p-1.5 flex items-center gap-2 shadow-sm ${className}`}>
+    <div className={`bg-gray-800/40 backdrop-blur-sm border border-white/5 rounded-xl p-1.5 flex items-center gap-2 shadow-sm flex-shrink-0 ${className}`}>
         {children}
     </div>
 );
@@ -78,8 +79,11 @@ export const Controls: React.FC<ControlsProps> = ({
     : 'Tempo (♩)';
 
   return (
-    <div className="w-full flex justify-between items-center z-30">
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+    // MAIN CONTAINER: Stack vertical on mobile, Row on desktop
+    <div className="w-full flex flex-col-reverse md:flex-row justify-between items-center z-30 gap-3 md:gap-0">
+        
+        {/* LEFT SIDE: Scrollable Toolbar */}
+        <div className="w-full md:w-auto flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             
             {/* Settings Group */}
             <Group>
@@ -219,11 +223,11 @@ export const Controls: React.FC<ControlsProps> = ({
 
         </div>
 
-        {/* Playback (Right Side) */}
-        <div>
+        {/* Playback (Right Side / Bottom on Mobile) */}
+        <div className="w-full md:w-auto">
           <button
             onClick={onTogglePlay}
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-95 border hover:scale-105 ${
+            className={`h-12 w-full md:w-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-95 border hover:scale-105 ${
               isPlaying 
                 ? 'bg-red-500 text-white border-red-400 shadow-red-500/20' 
                 : 'bg-green-500 text-white border-green-400 shadow-green-500/20'
@@ -240,6 +244,11 @@ export const Controls: React.FC<ControlsProps> = ({
                 <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
               </svg>
             )}
+            
+            {/* TEXT LABEL FOR MOBILE ONLY */}
+            <span className="md:hidden ml-2 font-bold text-sm tracking-wider">
+                {isPlaying ? "STOP" : "PLAY"}
+            </span>
           </button>
         </div>
     </div>
