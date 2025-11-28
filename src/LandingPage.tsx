@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import serumLogo from "./serum-logo.png"; // or .svg
+import serumLogo from "./serum_logo.png"; // or .svg
 
 const LandingPage: React.FC = () => {
   return (
