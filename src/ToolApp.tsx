@@ -878,6 +878,13 @@ const handleGenerate = async () => {
     }
   };
 
+const handlePlayFromStart = () => {
+    audioEngine.stop(); // Stop any current playback
+    audioEngine.start(0); // Start from index 0
+    setIsPlaying(true);
+    // Note: We don't change currentColIndex here because AudioEngine callback will update it instantly
+  };
+
   if (isReviewMode) {
     return (
       <ReviewView 
