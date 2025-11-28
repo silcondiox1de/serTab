@@ -820,7 +820,7 @@ const App: React.FC = () => {
                         Tab by serum
                      </h1>
                      <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
-                        Beta 1.1
+                        Beta 1.99
                      </span>
                  </div>
                  <div className="text-[10px] text-gray-500 font-['Courier'] font-bold leading-tight mt-0.5">
