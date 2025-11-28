@@ -889,7 +889,6 @@ const App: React.FC = () => {
              </div>
         </div>
       </header>
-      </header>
         {/* Sub-header for Title */}
       <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
         <div className="relative group flex items-center justify-center gap-2">
