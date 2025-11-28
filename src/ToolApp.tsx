@@ -996,6 +996,28 @@ const App: React.FC = () => {
            Tool belongs to Serum AI. All rights reserved.
         </div>
       </main>
+        {/* --- PORTRAIT MODE BLOCKER (Internal) --- */}
+      <div id="tool-portrait-warning" className="fixed inset-0 z-[9999] bg-[#0f111a] hidden flex-col items-center justify-center text-center p-8">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-6">
+            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"></path>
+            <path d="m9 12 3 3 3-3"></path>
+          </svg>
+          <h2 className="text-2xl font-bold mb-4">Please Rotate Device</h2>
+          <p className="text-gray-400 max-w-xs mx-auto">
+            The SerTab editor requires a wide screen. Please turn your phone sideways.
+          </p>
+          <div className="mt-8 w-10 h-16 border-2 border-gray-600 rounded-lg animate-[spin_3s_infinite]"></div>
+      </div>
+
+      {/* Internal Style to trigger the warning ONLY on this page */}
+      <style>{`
+        @media only screen and (orientation: portrait) and (max-width: 768px) {
+           /* Show the warning */
+           #tool-portrait-warning { display: flex !important; }
+           /* Hide the UI behind it so it doesn't look broken */
+           header, section, main { display: none !important; }
+        }
+      `}</style>
 
     </div>
   );
