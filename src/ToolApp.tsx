@@ -207,22 +207,64 @@ const handleGenerate = async () => {
 
     try {
         console.log("🚀 Calling Composer Service...");
+        
+        // Find where the music actually ends so we can append there
+        let lastNoteIndex = -1;
+        for (let i = columns.length - 1; i >= 0; i--) {
+            if (columns[i].some(n => n !== -1)) {
+                lastNoteIndex = i;
+                break;
+            }
+        }
+        
+        // If the grid is full of silence, start at 0. Otherwise start after last note.
+        const insertIndex = lastNoteIndex + 1;
+
         // Generate 2 bars (32 steps)
         const newRiff = await generateRiff(columns, bpm, instrumentType, 32);
         
         console.log("✅ Riff received, length:", newRiff.length);
         
         if (newRiff.length > 0) {
-            // Append the new riff to the end of the song
-            const newColumns = [...columns, ...newRiff];
+            // Create a new grid that fits the new riff perfectly
+            // 1. Keep everything up to the insertion point
+            const columnsBefore = columns.slice(0, insertIndex);
             
-            // Also extend durations/chords arrays to match
-            const newDurations = [...durations, ...Array(32).fill(getDefaultDuration(timeSignature))];
-            const newChords = [...chordNames, ...Array(32).fill(null)];
+            // 2. The new riff
+            
+            // 3. Keep the rest of the old grid (if you want to overwrite empty space)
+            // OR just append. Let's just insert it to be safe.
+            const columnsAfter = columns.slice(insertIndex);
+            
+            // Actually, simpler logic for now: Append to the END of the active music.
+            // But we need to maintain bar structure (multiples of 16 usually).
+            // Let's keep it simple: Append to the very end of the arrays to avoid breaking bar lines for now.
+            // UNLESS you want it to sound immediate.
+            
+            // BETTER STRATEGY: Overwrite the empty space if it exists!
+            const newColumns = [...columns];
+            const newDurations = [...durations];
+            const newChords = [...chordNames];
+            
+            // If we don't have enough space in the current grid, extend it
+            if (insertIndex + newRiff.length > newColumns.length) {
+                const extraNeeded = (insertIndex + newRiff.length) - newColumns.length;
+                const extraCols = createEmptyColumns(extraNeeded, INSTRUMENTS[instrumentType].stringCount);
+                newColumns.push(...extraCols);
+                newDurations.push(...Array(extraNeeded).fill(getDefaultDuration(timeSignature)));
+                newChords.push(...Array(extraNeeded).fill(null));
+            }
+
+            // Write the riff
+            newRiff.forEach((col, i) => {
+                newColumns[insertIndex + i] = col;
+            });
 
             updateStateWithHistory(newColumns, newDurations, newChords, connections);
             setToastMessage("Riff Generated! 🔮");
-            setCurrentColIndex(columns.length); 
+            
+            // Scroll to where we added it
+            setCurrentColIndex(insertIndex); 
         } else {
             setToastMessage("Could not generate riff.");
         }
