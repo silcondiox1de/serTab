@@ -11,7 +11,7 @@ interface ControlsProps {
   canRedo: boolean;
   hasSelection: boolean;
   onTogglePlay: () => void;
-  onPlayFromStart: () => void; // <--- NEW PROP
+  onPlayFromStart: () => void;
   onBpmChange: (bpm: number) => void;
   onAddMeasure: () => void;
   onAddFourMeasures: () => void;
@@ -61,7 +61,7 @@ export const Controls: React.FC<ControlsProps> = ({
   canRedo,
   hasSelection,
   onTogglePlay,
-  onPlayFromStart, // <--- Destructured
+  onPlayFromStart,
   onBpmChange,
   onAddMeasure,
   onAddFourMeasures,
@@ -89,7 +89,7 @@ export const Controls: React.FC<ControlsProps> = ({
         {/* LEFT SIDE: Scrollable Toolbar */}
         <div className="w-full md:w-auto flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             
-            {/* Standard Settings */}
+            {/* 1. Settings Group */}
             <Group>
                 <SelectWrapper label="Instrument">
                     <select 
@@ -128,7 +128,7 @@ export const Controls: React.FC<ControlsProps> = ({
                 </div>
             </Group>
 
-            {/* Editing Tools */}
+            {/* 2. Edit Group (Undo, Redo, Clear Bar, Clear All) */}
             <Group>
                  <button onClick={onUndo} disabled={!canUndo} className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all active:scale-95 ${!canUndo ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/10'}`} title="Undo (Ctrl+Z)">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
@@ -140,17 +140,16 @@ export const Controls: React.FC<ControlsProps> = ({
                  <button onClick={onClearBar} disabled={!hasSelection} className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all active:scale-95 ${!hasSelection ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-400 hover:bg-white/10'}`} title="Clear Selected Bar">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                  </button>
-                 <button onClick={onToggleConnection} disabled={!hasSelection} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${!hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'}`} title="Link/Slur (L)">
-                    <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none"><path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" /></svg>
-                    Link
-                </button>
+                 {/* RESTORED CLEAR TAB */}
+                 <button onClick={onClearTab} className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-white/10 transition-all active:scale-95" title="Reset All">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                 </button>
             </Group>
 
-            {/* --- NEW: SERUM AMPLIFY GROUP (AI Tools) --- */}
-            {/* We give this a purple border and background to make it stand out */}
+            {/* 3. SERUM LAB GROUP (AI Tools) */}
             <Group className="border-purple-500/30 bg-purple-900/10">
                 <div className="flex flex-col justify-center px-1">
-                    <span className="text-[9px] text-purple-400 font-bold uppercase tracking-widest leading-none">Amplify</span>
+                    <span className="text-[9px] text-purple-400 font-bold uppercase tracking-widest leading-none">Serum Lab</span>
                 </div>
                 
                 <button
@@ -184,51 +183,40 @@ export const Controls: React.FC<ControlsProps> = ({
                     Generate
                 </button>
             </Group>
-            {/* ------------------------------------------- */}
 
+            {/* 4. Helpers Group (Chords + Zoom) */}
             <Group>
+                <button onClick={onOpenChordLibrary} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"><span>🎵</span> Chords</button>
+                <Divider />
+                <button onClick={onToggleZoom} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${isZoomed ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        {isZoomed ? (
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        ) : (
+                            <path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/>
+                        )}
+                    </svg>
+                    {isZoomed ? 'Zoom Out' : 'Zoom In'}
+                </button>
+            </Group>
+
+            {/* 5. Structure Group (Link, +1 Bar, +4 Bars) */}
+            <Group>
+              <button onClick={onToggleConnection} disabled={!hasSelection} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${!hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'}`} title="Link/Slur (L)">
+                <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none"><path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" /></svg>
+                Link
+              </button>
+              <Divider />
               <button onClick={onAddMeasure} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 1 Bar">+1 Bar</button>
-              <button onClick={onOpenChordLibrary} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"><span>🎵</span> Chords</button>
+              <button onClick={onAddFourMeasures} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 4 Bars">+4 Bars</button>
             </Group>
 
         </div>
 
-        {/* --- NEW: DUAL PLAYBACK CONTROLS --- */}
+        {/* --- DUAL PLAYBACK CONTROLS --- */}
         <div className="w-full md:w-auto flex items-center gap-2">
           
-          {/* 1. Play From Start Button */}
+          {/* Play From Start Button */}
           <button
             onClick={onPlayFromStart}
-            className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-800 text-gray-400 border border-white/5 hover:bg-gray-700 hover:text-white hover:border-white/10 transition-all active:scale-95 shadow-lg"
-            title="Play from Start"
-          >
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-             </svg>
-          </button>
-
-          {/* 2. Main Play/Stop Button */}
-          <button
-            onClick={onTogglePlay}
-            className={`h-12 w-full md:w-16 rounded-xl md:rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-95 border hover:scale-105 ${
-              isPlaying 
-                ? 'bg-red-500 text-white border-red-400 shadow-red-500/20' 
-                : 'bg-green-500 text-white border-green-400 shadow-green-500/20'
-            }`}
-            title={isPlaying ? "Stop (Space)" : "Play from selection (Space)"}
-          >
-            {isPlaying ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 20 20">
-                <rect x="5" y="5" width="4" height="10" rx="1" />
-                <rect x="11" y="5" width="4" height="10" rx="1" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 fill-current ml-1" viewBox="0 0 20 20">
-                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-              </svg>
-            )}
-          </button>
-        </div>
-    </div>
-  );
-};
+            className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-800 text-gray-400 border border-white/5 hover:bg
