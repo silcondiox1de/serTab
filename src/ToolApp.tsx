@@ -6,7 +6,8 @@ import { ChordLibrary } from './components/ChordLibrary';
 import { ReviewView } from './components/ReviewView';
 import { TabColumn, createEmptyColumns, createDefaultDurations, InstrumentType, INSTRUMENTS, TimeSignatureType, TIME_SIGNATURES, NoteDuration, SavedProject } from './types';
 import { audioEngine } from './services/audioEngine';
-import { optimizeFingering } from './services/luthier';
+import { optimizeFingering } from './services/luthier'; // <----importing luthier
+import { generateRiff } from './services/composer'; //<---importing riffcompose
 
 // Helpers for frequency calculation
 const NOTE_OFFSETS: Record<string, number> = {
@@ -186,6 +187,9 @@ const handleOptimize = () => {
         setToastMessage("Fingering Optimized ✨");
     }
 };
+
+//add riffcompose
+const [isGenerating, setIsGenerating] = useState(false);
   
   // --------------------------------------------------------------------------
   // History Management
@@ -538,6 +542,42 @@ const handleOptimize = () => {
     };
     reader.readAsText(file);
   };
+    
+  const handleGenerate = async () => {
+    // Check if tab is empty
+    const isTabEmpty = columns.every(col => col.every(n => n === -1));
+    if (isTabEmpty) {
+        setToastMessage("Write some notes first!");
+        return;
+    }
+
+    setIsGenerating(true);
+    setToastMessage("AI is listening...");
+
+    try {
+        // Generate 2 bars (32 steps)
+        const newRiff = await generateRiff(columns, bpm, instrumentType, 32);
+
+        // Append the new riff to the end of the song
+        const newColumns = [...columns, ...newRiff];
+
+        // Also extend durations/chords arrays to match
+        const newDurations = [...durations, ...Array(32).fill(getDefaultDuration(timeSignature))];
+        const newChords = [...chordNames, ...Array(32).fill(null)];
+
+        updateStateWithHistory(newColumns, newDurations, newChords, connections);
+        setToastMessage("Riff Generated! 🔮");
+
+        // Scroll to the new section (optional but nice)
+        setCurrentColIndex(columns.length); 
+
+    } catch (error) {
+        console.error(error);
+        setToastMessage("AI Error. Try again.");
+    } finally {
+        setIsGenerating(false);
+    }
+};
 
   const loadProjectState = (project: SavedProject) => {
     audioEngine.stop();
