@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div style={styles.sectionA}>
           <img src={logo} alt="Serum AI Logo" style={styles.logo} />
           <h2 style={styles.tagline}>
-            Amplifying human creation.
+            Amplifying creation.
           </h2>
         </div>
 
@@ -39,7 +39,7 @@ export default function LandingPage() {
 
       {/* SECTION C: SMALLER, 1 ROW, PRIVATE BETA */}
       <footer style={styles.footer}>
-        <span>&copy; 2025 Serum AI</span>
+        <span>&copy; 2025 Serum Lab</span>
         <span style={styles.footerDot}>&bull;</span>
         
         <span style={{ opacity: 0.7 }}>Private Beta</span>
