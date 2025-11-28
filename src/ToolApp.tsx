@@ -884,18 +884,46 @@ const App: React.FC = () => {
              </div>
         </div>
       </header>
-      
+
       {/* Sub-header for Title */}
-      <div className="flex-none h-10 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
-        <div className="relative group">
+      <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
+        <div className="relative group flex items-center justify-center gap-2">
+            {/* The Input Field */}
             <input 
                 type="text" 
                 value={songTitle}
                 onChange={(e) => setSongTitle(e.target.value)}
                 placeholder="Untitled Project"
-                className="bg-transparent text-sm font-medium text-gray-400 placeholder-gray-600 focus:outline-none focus:text-white text-center w-72 px-3 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
+                className="
+                  bg-transparent 
+                  text-lg font-bold text-gray-200 
+                  placeholder-gray-600 
+                  text-center 
+                  w-64 px-2 py-1 
+                  border-b-2 border-transparent 
+                  group-hover:border-gray-600 
+                  focus:border-cyan-500 focus:outline-none focus:text-white
+                  transition-all duration-200
+                  font-['Courier']
+                "
             />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✎</span>
+            
+            {/* The Pencil Icon (Visual Cue) */}
+            <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </div>
+        </div>
+      </div>
+        
+            
+            {/* The Pencil Icon (Visual Cue) */}
+            <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </div>
         </div>
       </div>
       
