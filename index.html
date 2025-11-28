@@ -6,7 +6,17 @@
     <title>SerTab</title>
 
     <script>
+      // Fix "global is not defined"
       window.global = window;
+      
+      // Fix "Buffer is not defined" (The silent killer!)
+      if (typeof Buffer === 'undefined') {
+        window.Buffer = {
+            isBuffer: () => false,
+            from: (data) => new Uint8Array(data),
+            alloc: (size) => new Uint8Array(size),
+        };
+      }
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,7 +36,7 @@
       .tab-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 99px; }
       .tab-scroll::-webkit-scrollbar-thumb:hover { background: #4b5563; }
     </style>
-  </head>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
