@@ -1,71 +1,84 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import serumLogo from "./serum_logo.png"; // or .svg
+import React from 'react';
+import logo from './serum-logo.png'; // Make sure this path matches where your image is
 
-const LandingPage: React.FC = () => {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <img
-            src={serumLogo}
-            alt="Serum AI logo"
-            className="h-12 w-auto object-contain"
-          />
-          <span className="text-xl font-semibold tracking-tight">serum ai</span>
+    <div style={styles.container}>
+      {/* 1. Logo: Centered and sized */}
+      <img src={logo} alt="Serum AI Logo" style={styles.logo} />
+
+      {/* 2. The New Tagline */}
+      <h1 style={styles.tagline}>
+        Amplifying human creation.
+      </h1>
+
+      {/* 3. The Call to Action */}
+      <a href="/app" style={styles.link}>
+        Launch SerTab <span style={{ fontSize: '1.2em' }}>&rarr;</span>
+      </a>
+
+      {/* 4. Minimal Footer */}
+      <footer style={styles.footer}>
+        <p style={styles.copyright}>&copy; 2025 Serum AI</p>
+        <div style={styles.socials}>
+          {/* Add real links later */}
+          <span style={{ opacity: 0.5 }}>Private Beta</span>
         </div>
-
-        <Link
-          to="/ser"
-          className="text-sm font-semibold px-4 py-2 rounded-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all"
-        >
-          Launch SerTab →
-        </Link>
-      </header>
-
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-white/40 mb-4">
-          Private Beta
-        </p>
-
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-6">
-          Tiny motions.<br />
-          <span className="text-white/80">Ridiculous sound.</span>
-        </h1>
-
-        <p className="max-w-lg text-white/60 text-sm md:text-base mb-10">
-          Serum AI is a small experimental lab for musicians and tinkerers.
-          Our first experiment is <span className="text-white">SerTab</span> —
-          a fast guitar tab editor with an AI brain. More tools are quietly
-          brewing.
-        </p>
-
-        <Link
-          to="/sertab"
-          className="px-8 py-3 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition-all"
-        >
-          Enter SerTab
-        </Link>
-
-        <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent mt-16" />
-      </main>
-
-      {/* Footer */}
-      <footer className="py-6 px-8 border-t border-white/10 text-[11px] text-white/40 flex items-center justify-between">
-        <span>© {new Date().getFullYear()} Serum AI</span>
-        <a
-          href="https://github.com/silcondiox1de/serTab"
-          target="_blank"
-          rel="noreferrer"
-          className="hover:text-white/70"
-        >
-          GitHub
-        </a>
       </footer>
     </div>
   );
-};
+}
 
-export default LandingPage;
+// Simple CSS Styles (CSS-in-JS)
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    padding: '20px',
+    backgroundColor: '#ffffff',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  logo: {
+    maxWidth: '300px', // Prevents the massive logo
+    width: '100%',
+    height: 'auto',
+    marginBottom: '40px', // Space between logo and text
+  },
+  tagline: {
+    fontSize: '2rem',
+    fontWeight: '300', // Light font weight looks more modern
+    letterSpacing: '-0.5px',
+    margin: '0 0 40px 0',
+  },
+  link: {
+    fontSize: '1.2rem',
+    textDecoration: 'none',
+    color: '#000000',
+    borderBottom: '1px solid #000000', // stylish underline
+    paddingBottom: '2px',
+    transition: 'opacity 0.2s ease',
+    cursor: 'pointer',
+  },
+  footer: {
+    marginTop: 'auto', // Pushes footer to bottom if page is tall
+    paddingTop: '60px',
+    fontSize: '0.8rem',
+    color: '#666',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  copyright: {
+    margin: 0,
+  },
+  socials: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '20px',
+  }
+};
