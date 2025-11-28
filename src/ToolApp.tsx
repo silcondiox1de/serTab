@@ -6,6 +6,7 @@ import { ChordLibrary } from './components/ChordLibrary';
 import { ReviewView } from './components/ReviewView';
 import { TabColumn, createEmptyColumns, createDefaultDurations, InstrumentType, INSTRUMENTS, TimeSignatureType, TIME_SIGNATURES, NoteDuration, SavedProject } from './types';
 import { audioEngine } from './services/audioEngine';
+import { optimizeFingering } from './services/luthier';
 
 // Helpers for frequency calculation
 const NOTE_OFFSETS: Record<string, number> = {
@@ -175,6 +176,17 @@ const App: React.FC = () => {
     audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
   }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
 
+//add luthier 
+const handleOptimize = () => {
+    // If selection exists, only optimize that range. Otherwise optimize whole song.
+    // For MVP, let's optimize the whole song to show the power.
+    if (window.confirm("Optimize fingering for the entire tab? This uses AI logic to minimize hand movement.")) {
+        const newColumns = optimizeFingering(columns, instrumentType);
+        updateStateWithHistory(newColumns, durations, chordNames, connections);
+        setToastMessage("Fingering Optimized ✨");
+    }
+};
+  
   // --------------------------------------------------------------------------
   // History Management
   // --------------------------------------------------------------------------
@@ -954,6 +966,7 @@ const App: React.FC = () => {
             onClearTab={handleClearTab}
             onClearBar={handleClearBar}
             onToggleConnection={handleToggleConnection}
+            onOptimize={handleOptimize}
           />
       </section>
 
