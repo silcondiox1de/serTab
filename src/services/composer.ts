@@ -2,20 +2,21 @@ import * as mm from '@magenta/music/es6';
 import { TabColumn, InstrumentType, INSTRUMENTS } from '../types';
 import { optimizeFingering } from './luthier';
 
-// We use a lightweight model trained on melodies
+// Using the basic Melody RNN model
 const MODEL_CHECKPOINT = 'https://storage.googleapis.com/magentadata/js/checkpoints/music_rnn/basic_rnn';
 
 let musicRnn: mm.MusicRNN | null = null;
 
 const initModel = async () => {
   if (!musicRnn) {
+    console.log("🤖 AI: Initializing Model...");
     musicRnn = new mm.MusicRNN(MODEL_CHECKPOINT);
     await musicRnn.initialize();
+    console.log("🤖 AI: Model Ready!");
   }
   return musicRnn;
 };
 
-// Helper: Convert Tab Columns to Magenta NoteSequence
 const tabToNoteSequence = (
     columns: TabColumn[], 
     bpm: number, 
@@ -25,30 +26,32 @@ const tabToNoteSequence = (
     const tuning = instrument.frequencies;
     const notes: mm.INote[] = [];
 
-    // Calculate time steps (assuming 4 steps per beat / 16th notes)
-    // 1 step = 1 column in your grid
-    
     columns.forEach((col, stepIndex) => {
+        // Find the highest pitch in this column (Melody only!)
+        // This prevents chords from crashing the Melody model
+        let bestPitch = -1;
+        
         col.forEach((fret, strIndex) => {
             if (fret > -1) {
-                // Convert fret to Pitch (MIDI number)
-                // Formula: 69 + 12 * log2(freq / 440)
                 const freq = tuning[strIndex] * Math.pow(2, fret / 12);
                 const pitch = Math.round(69 + 12 * Math.log2(freq / 440));
-                
-                notes.push({
-                    pitch,
-                    quantizedStartStep: stepIndex,
-                    quantizedEndStep: stepIndex + 2 // Assume 8th note duration for simplicity
-                });
+                if (pitch > bestPitch) bestPitch = pitch;
             }
         });
+
+        if (bestPitch > -1) {
+             notes.push({
+                pitch: bestPitch,
+                quantizedStartStep: stepIndex,
+                quantizedEndStep: stepIndex + 1 // Keep it short
+            });
+        }
     });
 
     return {
         notes,
         totalQuantizedSteps: columns.length,
-        quantizationInfo: { stepsPerQuarter: 4 }, // Standard 16th note grid
+        quantizationInfo: { stepsPerQuarter: 4 },
         tempos: [{ qpm: bpm }]
     };
 };
@@ -57,68 +60,59 @@ export const generateRiff = async (
     currentColumns: TabColumn[], 
     bpm: number, 
     instrumentType: InstrumentType,
-    stepsToGenerate: number = 32, // Generate 2 bars by default (16 * 2)
-    temperature: number = 1.1 // Higher = crazier, Lower = more repetitive
+    stepsToGenerate: number = 32, // Generate 2 bars
+    temperature: number = 1.1 
 ): Promise<TabColumn[]> => {
     
+    console.log("🤖 AI: Starting generation...");
     const model = await initModel();
 
-    // 1. Convert current tab to NoteSequence
-    // We only take the last 32 steps (2 bars) as context to keep it fast
+    // 1. Prepare Context
+    // We grab the last 32 steps (2 bars) to give the AI some ideas
     const contextLength = 32;
     const startSlice = Math.max(0, currentColumns.length - contextLength);
     const contextColumns = currentColumns.slice(startSlice);
     
-    // If empty, prime it with a generic "C" note so the AI has something to start with
+    console.log(`🤖 AI: Analyzing last ${contextColumns.length} steps...`);
+
+    // If completely empty, we can't generate a melody continuation.
+    // We return empty so the UI handles it.
     if (contextColumns.every(c => c.every(n => n === -1))) {
-        // Create a dummy context if empty
+        console.warn("🤖 AI: Context is empty!");
         return []; 
     }
 
+    // 2. Convert to AI Format
     const inputSeq = tabToNoteSequence(contextColumns, bpm, instrumentType);
 
-    // 2. Generate!
+    // 3. Generate
+    console.log("🤖 AI: Dreaming up new notes...");
     const result = await model.continueSequence(inputSeq, stepsToGenerate, temperature);
+    console.log(`🤖 AI: Generated ${result.notes.length} notes.`);
 
-    // 3. Convert AI Output back to Tab Grid
-    // We create empty columns for the new section
+    // 4. Convert back to Tab
     const stringCount = INSTRUMENTS[instrumentType].stringCount;
     const newColumns: TabColumn[] = Array(stepsToGenerate).fill(null).map(() => Array(stringCount).fill(-1));
+    const tuning = INSTRUMENTS[instrumentType].frequencies;
 
-    // The result notes have 'quantizedStartStep' relative to the start of generation
     result.notes.forEach(note => {
         const step = note.quantizedStartStep;
         if (step !== undefined && step < stepsToGenerate) {
-            // We have a pitch, but we don't know string/fret yet.
-            // We temporarily put it on String 0 (Top string) just to hold the data.
-            // "The Luthier" will fix the position in the next step.
-            
-            // Reverse math to find a theoretical fret on low E string
-            // pitch = 69 + 12*log2(freq/440). 
-            // Simplified: pitch 40 is low E (standard guitar).
-            // This is a rough placeholder.
-            
-            // We simply store the pitch value in the first slot and mark it as specific flag if needed
-            // But optimizeFingering expects FRETS, not PITCHES.
-            
-            // Better approach: Let's find ANY valid position for this pitch
-            const tuning = INSTRUMENTS[instrumentType].frequencies;
-            let placed = false;
-            
+            // Find a valid string for this pitch
             for (let s = 0; s < stringCount; s++) {
                 const openPitch = Math.round(69 + 12 * Math.log2(tuning[s] / 440));
                 const neededFret = note.pitch - openPitch;
-                if (neededFret >= 0 && neededFret <= 24) {
-                    newColumns[step] = Array(stringCount).fill(-1); // Clear col for monophonic melody
+                
+                // Keep it in a playable range (0-15ish) for "Riffs"
+                if (neededFret >= 0 && neededFret <= 15) {
+                    newColumns[step] = Array(stringCount).fill(-1); 
                     newColumns[step][s] = neededFret;
-                    placed = true;
                     break;
                 }
             }
         }
     });
 
-    // 4. Run "The Luthier" to make it playable
-    // This organizes the scattered notes into a logical hand position
+    console.log("🤖 AI: Optimizing fingering...");
     return optimizeFingering(newColumns, instrumentType);
 };
