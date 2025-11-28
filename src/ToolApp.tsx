@@ -1000,35 +1000,75 @@ const handlePlayFromStart = () => {
       </header>
       
       {/* Sub-header for Title */}
-      <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
-        <div className="relative group flex items-center justify-center gap-2">
-            {/* The Input Field */}
-            <input 
-                type="text" 
-                value={songTitle}
-                onChange={(e) => setSongTitle(e.target.value)}
-                placeholder="Untitled Project"
-                className="
-                  bg-transparent 
-                  text-xl font-bold text-gray-200 
-                  placeholder-gray-600 
-                  text-center 
-                  w-64 px-2 py-1 
-                  border-b-2 border-transparent 
-                  group-hover:border-gray-600 
-                  focus:border-cyan-500 focus:outline-none focus:text-white
-                  transition-all duration-200
-                  font-['Courier']
-                "
-            />
-            
-            {/* The Pencil Icon (Visual Cue) */}
-            <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
+      {/* --- NEW TOOLBAR HEADER --- */}
+      <div className="flex-none h-14 bg-gray-900 border-b border-white/5 flex items-center justify-between px-6 relative z-30">
+        
+        {/* LEFT: EDIT TOOLS (Undo, Redo, Clear, Reset) */}
+        <div className="flex items-center gap-2">
+             <div className="bg-gray-800/40 border border-white/5 rounded-lg p-1 flex items-center gap-1">
+                 <button onClick={undo} disabled={!(historyIndex > 0)} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!(historyIndex > 0) ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/10'}`} title="Undo (Ctrl+Z)">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                 </button>
+                 <button onClick={redo} disabled={!(historyIndex < history.length - 1)} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!(historyIndex < history.length - 1) ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/10'}`} title="Redo (Ctrl+Y)">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                 </button>
+                 <div className="w-[1px] h-5 bg-white/10 mx-1"></div>
+                 <button onClick={handleClearBar} disabled={!activeCell} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!activeCell ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-400 hover:bg-white/10'}`} title="Clear Selected Bar">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                 </button>
+                 <button onClick={handleClearTab} className="h-8 w-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-white/10 transition-all active:scale-95" title="Reset All">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                 </button>
+             </div>
+        </div>
+
+        {/* CENTER: TITLE INPUT */}
+        <div className="absolute left-1/2 -translate-x-1/2">
+            <div className="relative group flex items-center justify-center gap-2">
+                <input 
+                    type="text" 
+                    value={songTitle}
+                    onChange={(e) => setSongTitle(e.target.value)}
+                    placeholder="Untitled Project"
+                    className="bg-transparent text-xl font-bold text-gray-200 placeholder-gray-600 text-center w-64 px-2 py-1 border-b-2 border-transparent group-hover:border-gray-600 focus:border-cyan-500 focus:outline-none focus:text-white transition-all duration-200 font-['Courier']"
+                />
+                <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                </div>
             </div>
         </div>
+
+        {/* RIGHT: PLAYBACK CONTROLS */}
+        <div className="flex items-center gap-3">
+            <div className="flex items-center bg-gray-800/40 border border-white/5 rounded-xl p-1 gap-2">
+              <button
+                onClick={handlePlayFromStart}
+                className="h-10 w-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                title="Play from Start"
+              >
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+              </button>
+
+              <button
+                onClick={handleTogglePlay}
+                className={`h-10 w-14 rounded-lg flex items-center justify-center shadow-lg transition-all active:scale-95 border ${
+                  isPlaying 
+                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30' 
+                    : 'bg-green-500 text-white border-green-400 shadow-green-500/20 hover:scale-105'
+                }`}
+                title={isPlaying ? "Stop (Space)" : "Play from selection (Space)"}
+              >
+                {isPlaying ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 20 20"><rect x="5" y="5" width="4" height="10" rx="1" /><rect x="11" y="5" width="4" height="10" rx="1" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-current ml-0.5" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
+                )}
+              </button>
+            </div>
+        </div>
+
       </div>
       
       {/* Hidden File Input for Import */}
