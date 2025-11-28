@@ -140,7 +140,6 @@ export const Controls: React.FC<ControlsProps> = ({
                  <button onClick={onClearBar} disabled={!hasSelection} className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all active:scale-95 ${!hasSelection ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-400 hover:bg-white/10'}`} title="Clear Selected Bar">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                  </button>
-                 {/* RESTORED CLEAR TAB */}
                  <button onClick={onClearTab} className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-white/10 transition-all active:scale-95" title="Reset All">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                  </button>
@@ -219,4 +218,36 @@ export const Controls: React.FC<ControlsProps> = ({
           {/* Play From Start Button */}
           <button
             onClick={onPlayFromStart}
-            className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-800 text-gray-400 border border-white/5 hover:bg
+            className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-800 text-gray-400 border border-white/5 hover:bg-gray-700 hover:text-white hover:border-white/10 transition-all active:scale-95 shadow-lg"
+            title="Play from Start"
+          >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+             </svg>
+          </button>
+
+          {/* Main Play/Stop Button */}
+          <button
+            onClick={onTogglePlay}
+            className={`h-12 w-full md:w-16 rounded-xl md:rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-95 border hover:scale-105 ${
+              isPlaying 
+                ? 'bg-red-500 text-white border-red-400 shadow-red-500/20' 
+                : 'bg-green-500 text-white border-green-400 shadow-green-500/20'
+            }`}
+            title={isPlaying ? "Stop (Space)" : "Play from selection (Space)"}
+          >
+            {isPlaying ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                <rect x="5" y="5" width="4" height="10" rx="1" />
+                <rect x="11" y="5" width="4" height="10" rx="1" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 fill-current ml-1" viewBox="0 0 20 20">
+                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+              </svg>
+            )}
+          </button>
+        </div>
+    </div>
+  );
+};
