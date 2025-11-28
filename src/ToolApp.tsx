@@ -6,8 +6,8 @@ import { ChordLibrary } from './components/ChordLibrary';
 import { ReviewView } from './components/ReviewView';
 import { TabColumn, createEmptyColumns, createDefaultDurations, InstrumentType, INSTRUMENTS, TimeSignatureType, TIME_SIGNATURES, NoteDuration, SavedProject } from './types';
 import { audioEngine } from './services/audioEngine';
-import { optimizeFingering } from './services/luthier'; // <----importing luthier
-import { generateRiff } from './services/composer'; //<---importing riffcompose
+import { optimizeFingering } from './services/luthier'; 
+import { generateRiff } from './services/composer'; 
 
 // Helpers for frequency calculation
 const NOTE_OFFSETS: Record<string, number> = {
@@ -133,6 +133,9 @@ const App: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [clipboard, setClipboard] = useState<HistoryState | null>(null);
 
+  // AI State
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const currentInstrument = INSTRUMENTS[instrumentType];
   const currentStepsPerBar = TIME_SIGNATURES[timeSignature].stepsPerBar;
   const currentTempoBeat = TIME_SIGNATURES[timeSignature].tempoBeat;
@@ -177,10 +180,11 @@ const App: React.FC = () => {
     audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
   }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
 
-//add luthier 
+// --------------------------------------------------------------------------
+// AI Handlers
+// --------------------------------------------------------------------------
+
 const handleOptimize = () => {
-    // If selection exists, only optimize that range. Otherwise optimize whole song.
-    // For MVP, let's optimize the whole song to show the power.
     if (window.confirm("Optimize fingering for the entire tab? This uses AI logic to minimize hand movement.")) {
         const newColumns = optimizeFingering(columns, instrumentType);
         updateStateWithHistory(newColumns, durations, chordNames, connections);
@@ -188,8 +192,48 @@ const handleOptimize = () => {
     }
 };
 
-//add riffcompose
-const [isGenerating, setIsGenerating] = useState(false);
+const handleGenerate = async () => {
+    console.log("🖱️ Button Clicked! Checking tab..."); 
+    
+    // Check if tab is empty
+    const isTabEmpty = columns.every(col => col.every(n => n === -1));
+    if (isTabEmpty) {
+        setToastMessage("Write some notes first!");
+        return;
+    }
+
+    setIsGenerating(true);
+    setToastMessage("AI is listening...");
+
+    try {
+        console.log("🚀 Calling Composer Service...");
+        // Generate 2 bars (32 steps)
+        const newRiff = await generateRiff(columns, bpm, instrumentType, 32);
+        
+        console.log("✅ Riff received, length:", newRiff.length);
+        
+        if (newRiff.length > 0) {
+            // Append the new riff to the end of the song
+            const newColumns = [...columns, ...newRiff];
+            
+            // Also extend durations/chords arrays to match
+            const newDurations = [...durations, ...Array(32).fill(getDefaultDuration(timeSignature))];
+            const newChords = [...chordNames, ...Array(32).fill(null)];
+
+            updateStateWithHistory(newColumns, newDurations, newChords, connections);
+            setToastMessage("Riff Generated! 🔮");
+            setCurrentColIndex(columns.length); 
+        } else {
+            setToastMessage("Could not generate riff.");
+        }
+
+    } catch (error) {
+        console.error("❌ Generation Error:", error);
+        setToastMessage("AI Error. Check Console.");
+    } finally {
+        setIsGenerating(false);
+    }
+};
   
   // --------------------------------------------------------------------------
   // History Management
@@ -542,42 +586,6 @@ const [isGenerating, setIsGenerating] = useState(false);
     };
     reader.readAsText(file);
   };
-    
-  const handleGenerate = async () => {
-    // Check if tab is empty
-    const isTabEmpty = columns.every(col => col.every(n => n === -1));
-    if (isTabEmpty) {
-        setToastMessage("Write some notes first!");
-        return;
-    }
-
-    setIsGenerating(true);
-    setToastMessage("AI is listening...");
-
-    try {
-        // Generate 2 bars (32 steps)
-        const newRiff = await generateRiff(columns, bpm, instrumentType, 32);
-
-        // Append the new riff to the end of the song
-        const newColumns = [...columns, ...newRiff];
-
-        // Also extend durations/chords arrays to match
-        const newDurations = [...durations, ...Array(32).fill(getDefaultDuration(timeSignature))];
-        const newChords = [...chordNames, ...Array(32).fill(null)];
-
-        updateStateWithHistory(newColumns, newDurations, newChords, connections);
-        setToastMessage("Riff Generated! 🔮");
-
-        // Scroll to the new section (optional but nice)
-        setCurrentColIndex(columns.length); 
-
-    } catch (error) {
-        console.error(error);
-        setToastMessage("AI Error. Try again.");
-    } finally {
-        setIsGenerating(false);
-    }
-};
 
   const loadProjectState = (project: SavedProject) => {
     audioEngine.stop();
@@ -872,7 +880,7 @@ const [isGenerating, setIsGenerating] = useState(false);
                         Tab by serum
                      </h1>
                      <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
-                        Beta 1.99
+                        Beta 1.1
                      </span>
                  </div>
                  <div className="text-[10px] text-gray-500 font-['Courier'] font-bold leading-tight mt-0.5">
@@ -941,7 +949,8 @@ const [isGenerating, setIsGenerating] = useState(false);
              </div>
         </div>
       </header>
-        {/* Sub-header for Title */}
+      
+      {/* Sub-header for Title */}
       <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
         <div className="relative group flex items-center justify-center gap-2">
             {/* The Input Field */}
@@ -952,7 +961,7 @@ const [isGenerating, setIsGenerating] = useState(false);
                 placeholder="Untitled Project"
                 className="
                   bg-transparent 
-                  text-lg font-bold text-gray-200 
+                  text-xl font-bold text-gray-200 
                   placeholder-gray-600 
                   text-center 
                   w-64 px-2 py-1 
@@ -981,7 +990,6 @@ const [isGenerating, setIsGenerating] = useState(false);
         accept=".json" 
         className="hidden" 
       />
-      
 
       <section className="flex-none shrink-0 z-30 pt-4 px-4 pb-2">
           <Controls
@@ -1007,6 +1015,10 @@ const [isGenerating, setIsGenerating] = useState(false);
             onClearBar={handleClearBar}
             onToggleConnection={handleToggleConnection}
             onOptimize={handleOptimize}
+            
+            // --- CONNECTING THE AI GENERATOR ---
+            onGenerate={handleGenerate}
+            isGenerating={isGenerating}
           />
       </section>
 
@@ -1049,7 +1061,8 @@ const [isGenerating, setIsGenerating] = useState(false);
            Tool belongs to Serum AI. All rights reserved.
         </div>
       </main>
-        {/* --- PORTRAIT MODE BLOCKER (Internal) --- */}
+      
+      {/* --- PORTRAIT MODE BLOCKER (Internal) --- */}
       <div id="tool-portrait-warning" className="fixed inset-0 z-[9999] bg-[#0f111a] hidden flex-col items-center justify-center text-center p-8">
           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-6">
             <path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"></path>
