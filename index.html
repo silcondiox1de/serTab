@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SerTab</title>
 
+    <script>
+      window.global = window;
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -13,10 +17,10 @@
         background-color: #0f111a;
         color: white;
         margin: 0;
-        overflow-x: hidden; /* Prevent horizontal scrolling */
+        overflow-x: hidden;
       }
 
-      /* Custom Scrollbar for the Tab Editor */
+      /* Custom Scrollbar */
       .tab-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
       .tab-scroll::-webkit-scrollbar-track { background: transparent; }
       .tab-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 99px; }
@@ -25,7 +29,6 @@
   </head>
   <body>
     <div id="root"></div>
-    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
