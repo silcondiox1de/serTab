@@ -1025,7 +1025,7 @@ const handlePlayFromStart = () => {
         {/* CENTER: TITLE INPUT */}
         <div className="absolute left-1/2 -translate-x-1/2">
             <div className="relative group flex items-center justify-center gap-2">
-                <{/* The Input Field */}
+                {/* The Input Field */}
             <input 
                 type="text" 
                 value={songTitle}
