@@ -1,4 +1,4 @@
-import * as mm from '@google/magenta';
+import * as mm from '@magenta/music/es6';
 import { TabColumn, InstrumentType, INSTRUMENTS } from '../types';
 import { optimizeFingering } from './luthier';
 
