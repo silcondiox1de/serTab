@@ -7,33 +7,28 @@ export default function LandingPage() {
     <div style={styles.container}>
       <div style={styles.content}>
         
-        {/* LOGO */}
-        <img src={logo} alt="Serum AI Logo" style={styles.logo} />
+        {/* SECTION A: BIGGER */}
+        <div style={styles.sectionA}>
+          <img src={logo} alt="Serum AI Logo" style={styles.logo} />
+          <h2 style={styles.tagline}>
+            Amplifying human creation.
+          </h2>
+        </div>
 
-        {/* TAGLINE */}
-        <h2 style={styles.tagline}>
-          Amplifying human creation.
-        </h2>
-
-        {/* SEPARATOR LINE */}
+        {/* SEPARATOR */}
         <div style={styles.separator}></div>
 
-        {/* TOOLS SECTION */}
-        <div style={styles.toolsSection}>
-          {/* Bigger Header as requested */}
+        {/* SECTION B: SMALLER + COURIER FONT */}
+        <div style={styles.sectionB}>
           <h3 style={styles.toolsHeader}>Tools by Serum</h3>
           
-          {/* Horizontal Row */}
           <div style={styles.toolRow}>
-            {/* Tool 1 */}
             <Link to="/tool/tab" style={styles.link}>
               SerTab
             </Link>
 
-            {/* Separator */}
             <span style={styles.pipe}>|</span>
 
-            {/* Tool 2 (Placeholder) */}
             <span style={styles.comingSoon}>
               More tools brewing...
             </span>
@@ -42,14 +37,17 @@ export default function LandingPage() {
 
       </div>
 
-      {/* FOOTER */}
+      {/* SECTION C: SMALLER, 1 ROW, PRIVATE BETA */}
       <footer style={styles.footer}>
-        <p style={styles.copyright}>&copy; 2025 Serum AI</p>
-        <div style={styles.footerLinks}>
-            <a href="mailto:serum.ai@outlook.com" style={styles.contactLink}>
-              Contact: serum.ai@outlook.com
-            </a>
-        </div>
+        <span>&copy; 2025 Serum AI</span>
+        <span style={styles.footerDot}>&bull;</span>
+        
+        <span style={{ opacity: 0.7 }}>Private Beta</span>
+        <span style={styles.footerDot}>&bull;</span>
+        
+        <a href="mailto:serum.ai@outlook.com" style={styles.contactLink}>
+          Contact
+        </a>
       </footer>
     </div>
   );
@@ -72,84 +70,96 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center', 
     padding: '20px',
-    paddingBottom: '80px', // Visual centering
+    paddingBottom: '60px', 
+  },
+  
+  // --- SECTION A STYLES ---
+  sectionA: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '30px',
   },
   logo: {
-    maxWidth: '280px', 
+    maxWidth: '380px', // Increased size (was 280px)
     width: '100%',
     height: 'auto',
-    marginBottom: '20px', 
+    marginBottom: '25px', 
   },
   tagline: {
-    fontSize: '1.4rem', 
+    fontSize: '2rem', // Increased size (was 1.4rem)
     fontWeight: '300',  
-    color: '#555',      
-    margin: '0 0 40px 0',
+    color: '#333', // Slightly darker to match the size      
+    margin: 0,
     textAlign: 'center',
+    letterSpacing: '-0.5px',
   },
+
   separator: {
-    width: '40px',
+    width: '30px',
     height: '1px',
-    backgroundColor: '#ddd', 
-    marginBottom: '50px',
+    backgroundColor: '#eee', 
+    marginBottom: '40px',
   },
-  toolsSection: {
+
+  // --- SECTION B STYLES ---
+  sectionB: {
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '15px',
+    gap: '10px',
+    // Courier Font applied to the whole section
+    fontFamily: '"Courier New", Courier, monospace', 
   },
   toolsHeader: {
-    fontSize: '1.8rem', // Much larger now
-    fontWeight: '600',
-    color: '#000',      // Solid black to stand out
+    fontSize: '1rem', // Much smaller (was 1.8rem)
+    fontWeight: '700',
+    color: '#000',      
     margin: 0,
-    letterSpacing: '-0.5px',
+    textTransform: 'uppercase', // Optional: looks good with Courier
+    letterSpacing: '1px',
   },
   toolRow: {
     display: 'flex',
-    alignItems: 'center', // Ensures vertical alignment in the row
-    gap: '12px',
-    fontSize: '1.1rem',
+    alignItems: 'center', 
+    gap: '10px',
+    fontSize: '0.85rem', // Smaller text for the links
   },
   link: {
     textDecoration: 'none',
     color: '#000',
-    borderBottom: '1px solid #000', // Stylish underline
-    paddingBottom: '1px',
+    borderBottom: '1px solid #000', 
     cursor: 'pointer',
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
   pipe: {
-    color: '#ccc', // Light grey separator
-    fontWeight: '300',
+    color: '#ccc', 
   },
   comingSoon: {
-    color: '#888',
-    fontStyle: 'italic',
-    fontSize: '1rem',
-  },
-  footer: {
-    padding: '30px',
-    textAlign: 'center',
-    fontSize: '0.85rem',
     color: '#999',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
+    fontStyle: 'italic',
   },
-  copyright: {
-    margin: 0,
-  },
-  footerLinks: {
-    display: 'flex',
+
+  // --- SECTION C (FOOTER) STYLES ---
+  footer: {
+    padding: '20px',
+    textAlign: 'center',
+    fontSize: '0.75rem', // Small font size
+    color: '#aaa',
+    display: 'flex',       // Makes it 1 row
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  footerDot: {
+    fontSize: '0.5rem', // Tiny separator dot
+    opacity: 0.5,
   },
   contactLink: {
-    color: '#999',
-    textDecoration: 'none',
-    borderBottom: '1px dotted #ccc',
+    color: '#aaa',
+    textDecoration: 'underline',
+    cursor: 'pointer',
     transition: 'color 0.2s',
   }
 };
