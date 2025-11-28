@@ -23,6 +23,7 @@ interface ControlsProps {
   onClearTab: () => void;
   onClearBar: () => void;
   onToggleConnection: () => void;
+  onOptimize: () => void; // <--- NEW PROP
 }
 
 // Reusable Select Style Wrapper
@@ -71,7 +72,8 @@ export const Controls: React.FC<ControlsProps> = ({
   onRedo,
   onClearTab,
   onClearBar,
-  onToggleConnection
+  onToggleConnection,
+  onOptimize // <--- NEW DESTRUCTURED PROP
 }) => {
   
   const tempoLabel = TIME_SIGNATURES[timeSignature].tempoBeat === 'dotted-quarter' 
@@ -187,6 +189,17 @@ export const Controls: React.FC<ControlsProps> = ({
                 >
                     <span>🎵</span> Chords
                 </button>
+                
+                {/* --- NEW FIX BUTTON --- */}
+                <button
+                    onClick={onOptimize}
+                    className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"
+                    title="AI Optimize Fingering"
+                >
+                    <span>✨</span> Fix
+                </button>
+                {/* ---------------------- */}
+
                 <Divider />
                 <button
                     onClick={onToggleZoom}
