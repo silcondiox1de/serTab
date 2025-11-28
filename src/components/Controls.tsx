@@ -138,20 +138,22 @@ export const Controls: React.FC<ControlsProps> = ({
                     <span className="text-[10px] text-purple-200 font-extrabold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
                 </div>
                 
+                {/* RENAMED: Fix -> Fix Fingering */}
                 <button
                     onClick={onOptimize}
-                    className="h-8 px-3 rounded-lg text-xs font-bold text-purple-100 hover:text-white hover:bg-white/20 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"
-                    title="Optimize Fingering"
+                    className="h-8 px-3 rounded-lg text-xs font-bold text-purple-100 hover:text-white hover:bg-white/20 transition-all border border-transparent flex items-center gap-1.5 active:scale-95 whitespace-nowrap"
+                    title="Optimize Fingering (AI Luthier)"
                 >
-                    <span>✨</span> Fix
+                    <span>✨</span> Fix Fingering
                 </button>
                 
                 <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
 
+                {/* RENAMED: Generate -> Help Compose */}
                 <button
                     onClick={onGenerate}
                     disabled={isGenerating}
-                    className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                    className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 whitespace-nowrap ${
                         isGenerating 
                         ? 'text-purple-200/50 cursor-wait' 
                         : 'text-purple-100 hover:text-white hover:bg-white/20'
@@ -166,7 +168,7 @@ export const Controls: React.FC<ControlsProps> = ({
                     ) : (
                         <span>🔮</span>
                     )}
-                    Generate
+                    Help Compose
                 </button>
             </Group>
 
