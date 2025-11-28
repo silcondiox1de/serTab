@@ -884,8 +884,7 @@ const App: React.FC = () => {
              </div>
         </div>
       </header>
-
-      {/* Sub-header for Title */}
+        {/* Sub-header for Title */}
       <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
         <div className="relative group flex items-center justify-center gap-2">
             {/* The Input Field */}
@@ -916,16 +915,6 @@ const App: React.FC = () => {
             </div>
         </div>
       </div>
-        
-            
-            {/* The Pencil Icon (Visual Cue) */}
-            <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-            </div>
-        </div>
-      </div>
       
       {/* Hidden File Input for Import */}
       <input 
@@ -935,6 +924,7 @@ const App: React.FC = () => {
         accept=".json" 
         className="hidden" 
       />
+      
 
       <section className="flex-none shrink-0 z-30 pt-4 px-4 pb-2">
           <Controls
