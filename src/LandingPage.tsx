@@ -1,5 +1,6 @@
 import React from 'react';
 import logo from './serum-logo.png'; // Make sure this path matches where your image is
+import { Link } from 'react-router-dom';
 
 export default function LandingPage() {
   return (
@@ -13,9 +14,9 @@ export default function LandingPage() {
       </h1>
 
       {/* 3. The Call to Action */}
-      <a href="/app" style={styles.link}>
+      <Link to="/tool/tab" style={styles.link}>
         Launch SerTab <span style={{ fontSize: '1.2em' }}>&rarr;</span>
-      </a>
+      </Link>
 
       {/* 4. Minimal Footer */}
       <footer style={styles.footer}>
