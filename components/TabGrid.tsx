@@ -383,9 +383,9 @@ export const TabGrid: React.FC<TabGridProps> = ({
             {lines.map((lineBars, lineIdx) => {
                 const lineStartBarIdx = startBar + (lineIdx * PREVIEW_BARS_PER_ROW);
                 return (
-                    <div key={`prev-line-${lineStartBarIdx}`} className="relative pl-10">
+                    <div key={`prev-line-${lineStartBarIdx}`} className="relative pl-14">
                         {/* Row Labels */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-[9px] font-bold text-gray-600 py-1.5 items-center select-none">
+                        <div className="absolute left-0 top-0 bottom-0 w-14 flex flex-col justify-between text-[9px] font-bold text-gray-600 py-1.5 items-center select-none border-r border-transparent">
                              {tuning.map((t, i) => <div key={i} className="flex-1 flex items-center justify-center">{t}</div>)}
                         </div>
 
@@ -445,8 +445,10 @@ export const TabGrid: React.FC<TabGridProps> = ({
             ref={editAreaRef}
             className="relative pl-14 mb-8"
         >
-            <div className="absolute -top-3 left-4 px-3 py-1 bg-cyan-600 text-white text-[10px] uppercase tracking-widest font-bold rounded shadow-lg z-30 font-['Courier']">
-                Editor
+            <div className="absolute -top-3 left-0 w-14 flex justify-center z-30">
+                 <div className="px-2 py-0.5 bg-cyan-600 text-white text-[9px] uppercase tracking-wider font-bold rounded shadow-lg font-['Courier']">
+                    Editor
+                 </div>
             </div>
 
             {/* "Headstock" Sidebar */}

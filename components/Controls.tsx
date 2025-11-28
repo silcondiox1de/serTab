@@ -41,7 +41,7 @@ const SelectWrapper = ({ label, children }: { label: string, children?: React.Re
     </div>
 );
 
-const Group = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+const Group = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => (
     <div className={`bg-gray-800/40 backdrop-blur-sm border border-white/5 rounded-xl p-1.5 flex items-center gap-2 shadow-sm ${className}`}>
         {children}
     </div>

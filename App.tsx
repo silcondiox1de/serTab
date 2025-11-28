@@ -1,10 +1,58 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { TabGrid } from './components/TabGrid';
 import { Controls } from './components/Controls';
 import { ChordLibrary } from './components/ChordLibrary';
 import { ReviewView } from './components/ReviewView';
 import { TabColumn, createEmptyColumns, createDefaultDurations, InstrumentType, INSTRUMENTS, TimeSignatureType, TIME_SIGNATURES, NoteDuration, SavedProject } from './types';
 import { audioEngine } from './services/audioEngine';
+
+// Helpers for frequency calculation
+const NOTE_OFFSETS: Record<string, number> = {
+    'c': 0, 'c#': 1, 'db': 1, 
+    'd': 2, 'd#': 3, 'eb': 3, 
+    'e': 4, 
+    'f': 5, 'f#': 6, 'gb': 6, 
+    'g': 7, 'g#': 8, 'ab': 8, 
+    'a': 9, 'a#': 10, 'bb': 10, 
+    'b': 11
+};
+const BASE_C0 = 16.3516;
+
+const getFrequencyFromStr = (noteStr: string, referenceFreq: number): number => {
+    const clean = noteStr.trim().toLowerCase();
+    
+    // explicit octave check (e.g. c2, a#4)
+    const match = clean.match(/^([a-g][#b]?)([0-8])$/);
+    if (match) {
+        const notePart = match[1];
+        const octPart = parseInt(match[2], 10);
+        const nIdx = NOTE_OFFSETS[notePart];
+        if (nIdx !== undefined) {
+             const semitones = octPart * 12 + nIdx;
+             return BASE_C0 * Math.pow(2, semitones / 12);
+        }
+    }
+
+    // No explicit octave, find closest to reference frequency (default tuning)
+    const noteOnly = clean.replace(/[0-9]/g, '');
+    const nIdx = NOTE_OFFSETS[noteOnly];
+    if (nIdx === undefined) return referenceFreq;
+
+    let closestFreq = referenceFreq;
+    let minDiff = Infinity;
+
+    // Search reasonable range of octaves (0-8)
+    for (let oct = 0; oct <= 8; oct++) {
+        const semitones = oct * 12 + nIdx;
+        const candidate = BASE_C0 * Math.pow(2, semitones / 12);
+        const diff = Math.abs(candidate - referenceFreq);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestFreq = candidate;
+        }
+    }
+    return closestFreq;
+};
 
 // Toast Component
 const Toast = ({ message, onClose }: { message: string | null, onClose: () => void }) => {
@@ -109,14 +157,22 @@ const App: React.FC = () => {
       return validDurations.includes(val) ? (val as NoteDuration) : '8';
   }, []);
 
+  // Calculate realtime frequencies from customTuning
+  const activeFrequencies = useMemo(() => {
+      return customTuning.map((t, i) => {
+         const def = currentInstrument.frequencies[i] || 440;
+         return getFrequencyFromStr(t, def);
+      });
+  }, [customTuning, currentInstrument]);
+
   // Sync Audio Engine state
   useEffect(() => {
     let engineBpm = bpm;
     if (currentTempoBeat === 'dotted-quarter') {
         engineBpm = bpm * 1.5;
     }
-    audioEngine.setScore(columns, durations, engineBpm, currentInstrument.frequencies, instrumentType);
-  }, [columns, durations, bpm, currentInstrument, instrumentType, currentTempoBeat]);
+    audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
+  }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
 
   // --------------------------------------------------------------------------
   // History Management
@@ -759,27 +815,12 @@ const App: React.FC = () => {
                  <div className="flex items-center gap-3">
                      <h1 className="text-lg font-bold text-white tracking-tight leading-none drop-shadow-sm font-['Courier']">Tab by serum</h1>
                      <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
-                        Beta 1.0
+                        Beta 1.1
                      </span>
                  </div>
                  <div className="text-[10px] text-gray-500 font-['Courier'] font-bold leading-tight mt-0.5">
                     development in progress <a href="https://github.com/silcondiox1de" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondiox1de</a>
                  </div>
-             </div>
-             
-             {/* Divider */}
-             <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
-             
-             {/* Integrated Title Input */}
-             <div className="relative group">
-                <input 
-                    type="text" 
-                    value={songTitle}
-                    onChange={(e) => setSongTitle(e.target.value)}
-                    placeholder="Untitled Project"
-                    className="bg-transparent text-base font-medium text-gray-300 placeholder-gray-600 focus:outline-none focus:text-white w-72 px-3 py-1.5 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
              </div>
         </div>
         
@@ -843,6 +884,20 @@ const App: React.FC = () => {
              </div>
         </div>
       </header>
+      
+      {/* Sub-header for Title */}
+      <div className="flex-none h-10 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
+        <div className="relative group">
+            <input 
+                type="text" 
+                value={songTitle}
+                onChange={(e) => setSongTitle(e.target.value)}
+                placeholder="Untitled Project"
+                className="bg-transparent text-sm font-medium text-gray-400 placeholder-gray-600 focus:outline-none focus:text-white text-center w-72 px-3 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-all border border-transparent focus:border-white/10 font-['Courier']"
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✎</span>
+        </div>
+      </div>
       
       {/* Hidden File Input for Import */}
       <input 
