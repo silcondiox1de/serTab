@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-      /* --- 1. GLOBAL STYLES --- */
+      /* --- GLOBAL STYLES --- */
       body {
         background-color: #0f111a;
         color: white;
@@ -16,63 +16,16 @@
         overflow-x: hidden; /* Prevent horizontal scrolling */
       }
 
-      /* Custom Scrollbar */
+      /* Custom Scrollbar for the Tab Editor */
       .tab-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
       .tab-scroll::-webkit-scrollbar-track { background: transparent; }
       .tab-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 99px; }
-      
-      /* --- 2. ROTATION GUARD (The Fix) --- */
-      /* By default, the warning is hidden */
-      #rotate-warning { display: none; }
-
-      /* ON MOBILE PORTRAIT ONLY: */
-      @media only screen and (orientation: portrait) and (max-width: 768px) {
-        
-        /* 1. Hide the actual app (so they don't see the broken vertical layout) */
-        #root { display: none !important; }
-
-        /* 2. Show the full-screen warning */
-        #rotate-warning {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-color: #0f111a;
-          z-index: 9999;
-          padding: 20px;
-          text-align: center;
-        }
-      }
+      .tab-scroll::-webkit-scrollbar-thumb:hover { background: #4b5563; }
     </style>
   </head>
   <body>
-    
     <div id="root"></div>
-
-    <div id="rotate-warning">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
-        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"></path>
-        <path d="m9 12 3 3 3-3"></path>
-      </svg>
-      
-      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Best Viewed in Landscape</h2>
-      <p style="color: #9ca3af; max-width: 300px;">
-        Please rotate your device sideways to use the SerTab editor.
-      </p>
-      
-      <div style="margin-top: 30px; width: 40px; height: 70px; border: 2px solid #555; border-radius: 8px; animation: rotate-phone 2s infinite ease-in-out;"></div>
-    </div>
-
-    <style>
-      @keyframes rotate-phone {
-        0% { transform: rotate(0deg); opacity: 0.5; }
-        50% { transform: rotate(90deg); opacity: 1; }
-        100% { transform: rotate(0deg); opacity: 0.5; }
-      }
-    </style>
-
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
