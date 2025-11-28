@@ -266,7 +266,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                   </div>
                   <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
                     {Array.from({length: instrument.stringCount}).map((_, i) => (
-                      <div key={i} className="w-full h-[1px] bg-gray-300"></div>
+                      <div key={i} className="w-full border-t border-gray-300 print:border-gray-500"></div>
                     ))}
                   </div>
 
@@ -364,6 +364,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 background-color: white !important;
                 color: black !important;
                 display: block !important;
+            }
+            /* Force background colors and borders to print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
       `}</style>

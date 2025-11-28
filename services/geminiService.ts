@@ -1,9 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TabColumn, InstrumentConfig } from "../types";
 
-const GEMINI_API_KEY = process.env.API_KEY || '';
-
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const getSystemInstruction = (instrument: InstrumentConfig) => `
 You are a professional musician and composer specialized in ${instrument.name}. 
