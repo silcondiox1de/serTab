@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom'; 
 import { TabGrid } from './components/TabGrid';
 import { Controls } from './components/Controls';
 import { ChordLibrary } from './components/ChordLibrary';
@@ -811,17 +812,21 @@ const App: React.FC = () => {
 
       <header className="flex-none h-20 bg-gray-900/90 backdrop-blur-xl border-b border-white/5 flex items-center px-8 justify-between z-40 gap-8 shrink-0 shadow-2xl">
         <div className="flex items-center gap-6">
-             <div className="flex flex-col justify-center">
+             {/* HOME BUTTON (Logo) */}
+             <Link to="/" className="flex flex-col justify-center hover:opacity-80 transition-opacity cursor-pointer group">
                  <div className="flex items-center gap-3">
-                     <h1 className="text-lg font-bold text-white tracking-tight leading-none drop-shadow-sm font-['Courier']">Tab by serum</h1>
+                     {/* Updated font size to text-xl to match Title */}
+                     <h1 className="text-xl font-bold text-white tracking-tight leading-none drop-shadow-sm font-['Courier'] group-hover:text-cyan-400 transition-colors">
+                        Tab by serum
+                     </h1>
                      <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 leading-none uppercase tracking-wider">
                         Beta 1.1
                      </span>
                  </div>
                  <div className="text-[10px] text-gray-500 font-['Courier'] font-bold leading-tight mt-0.5">
-                    development in progress <a href="https://github.com/silcondiox1de" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer">@silicondiox1de</a>
+                    development in progress <span className="text-gray-400">@silicondiox1de</span>
                  </div>
-             </div>
+             </Link>
         </div>
         
         <div className="flex items-center gap-6 shrink-0">
@@ -883,6 +888,7 @@ const App: React.FC = () => {
                 </button>
              </div>
         </div>
+      </header>
       </header>
         {/* Sub-header for Title */}
       <div className="flex-none h-12 bg-gray-900 border-b border-white/5 flex items-center justify-center relative z-30">
