@@ -17,7 +17,7 @@ const LandingPage: React.FC = () => {
         </div>
 
         <Link
-          to="/sertab"
+          to="/ser"
           className="text-sm font-semibold px-4 py-2 rounded-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all"
         >
           Launch SerTab →
