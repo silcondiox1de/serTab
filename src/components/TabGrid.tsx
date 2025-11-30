@@ -5,122 +5,229 @@ import { TabCell } from './TabCell';
 interface DurationMarkerProps {
   duration: NoteDuration;
   onClick: () => void;
-  widthPercent: number;
   span: number; // Number of steps this note occupies
   beam8: { left: boolean; right: boolean };
   beam16: { left: boolean; right: boolean };
 }
 
-const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widthPercent, span, beam8, beam16 }) => {
+const DurationMarker: React.FC<DurationMarkerProps> = ({
+  duration,
+  onClick,
+  span,
+  beam8,
+  beam16,
+}) => {
   const isBeamed = beam8.left || beam8.right;
   const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
-  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
+  const strokeClass =
+    "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
 
-  // Calculate the center position of the note head relative to the container
-  const singleStepWidth = 100 / span;
-  const centerPercent = singleStepWidth / 2;
+  // Center of this duration block (always middle of the span)
+  const centerPercent = 50;
 
-  // Render SVG Symbol (Head, Stem, Flags)
   const renderSymbol = () => {
-      const strokeWidth = 1.5;
-      const height = 32;
-      const cx = 10; // Center of 20px wide SVG
+    const strokeWidth = 1.5;
+    const height = 32;
+    const cx = 10; // center inside SVG (we'll center the SVG itself)
 
-      switch (duration) {
-          case '1': // Whole Note
-              return <circle cx={cx} cy={height/2} r="5" strokeWidth={strokeWidth} fill="none" className={strokeClass} />;
-          case '2': // Half Note
-               return (
-                  <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height - 8} />
-                    <circle cx={cx} cy={height - 5} r="4" />
-                  </g>
-               );
-          case '4': // Quarter Note
-              return <line x1={cx} y1={5} x2={cx} y2={height} strokeWidth={strokeWidth} className={strokeClass} />;
-          case '8': // 8th Note
-              if (isBeamed) {
-                  return <line x1={cx} y1={5} x2={cx} y2={32} strokeWidth={strokeWidth} className={strokeClass} />;
-              }
-              return (
-                  <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height} />
-                    <path d={`M ${cx} ${height} Q ${cx+10} ${height-5} ${cx+10} ${height-15}`} />
-                  </g>
-              );
-          case '16': // 16th Note
-              if (isBeamed) {
-                  return <line x1={cx} y1={5} x2={cx} y2={32} strokeWidth={strokeWidth} className={strokeClass} />;
-              }
-              return (
-                   <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height} />
-                    <path d={`M ${cx} ${height} Q ${cx+10} ${height-5} ${cx+10} ${height-15}`} />
-                    <path d={`M ${cx} ${height-8} Q ${cx+10} ${height-13} ${cx+10} ${height-23}`} />
-                  </g>
-              );
-          default: 
-              return <line x1={cx} y1={5} x2={cx} y2={height} strokeWidth={strokeWidth} className={strokeClass} />;
-      }
+    switch (duration) {
+      case "1": // Whole
+        return (
+          <circle
+            cx={cx}
+            cy={height / 2}
+            r="5"
+            strokeWidth={strokeWidth}
+            fill="none"
+            className={strokeClass}
+          />
+        );
+      case "2": // Half
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height - 8} />
+            <circle cx={cx} cy={height - 5} r="4" />
+          </g>
+        );
+      case "4": // Quarter
+        return (
+          <line
+            x1={cx}
+            y1={5}
+            x2={cx}
+            y2={height}
+            strokeWidth={strokeWidth}
+            className={strokeClass}
+          />
+        );
+      case "8": // Eighth
+        if (isBeamed) {
+          return (
+            <line
+              x1={cx}
+              y1={5}
+              x2={cx}
+              y2={height}
+              strokeWidth={strokeWidth}
+              className={strokeClass}
+            />
+          );
+        }
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height} />
+            <path
+              d={`M ${cx} ${height} Q ${cx + 10} ${height - 5} ${
+                cx + 10
+              } ${height - 15}`}
+            />
+          </g>
+        );
+      case "16": // Sixteenth
+        if (isBeamed) {
+          return (
+            <line
+              x1={cx}
+              y1={5}
+              x2={cx}
+              y2={height}
+              strokeWidth={strokeWidth}
+              className={strokeClass}
+            />
+          );
+        }
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height} />
+            <path
+              d={`M ${cx} ${height} Q ${cx + 10} ${height - 5} ${
+                cx + 10
+              } ${height - 15}`}
+            />
+            <path
+              d={`M ${cx} ${height - 8} Q ${cx + 10} ${height - 13} ${
+                cx + 10
+              } ${height - 23}`}
+            />
+          </g>
+        );
+      default:
+        return (
+          <line
+            x1={cx}
+            y1={5}
+            x2={cx}
+            y2={height}
+            strokeWidth={strokeWidth}
+            className={strokeClass}
+          />
+        );
+    }
   };
 
   return (
-      <div 
-        onClick={onClick}
-        className="h-full relative cursor-pointer group hover:bg-white/5"
-        style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
-        title={`Duration: 1/${duration}`}
-      >
-         {/* Beams Layer */}
-         {isBeamed && (
-            <div className="absolute inset-0 pointer-events-none">
-                {/* 8th Beam (Bottom) */}
-                <div className="absolute bottom-0 w-full h-[2px]">
-                    {/* From Left Edge to Center */}
-                    {beam8.left && (
-                        <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>
-                    )}
-                    {/* From Center to Right Edge */}
-                    {beam8.right && (
-                        <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>
-                    )}
-                </div>
-                
-                {/* 16th Beam (Above 8th) */}
-                {duration === '16' && (
-                    <div className="absolute bottom-[4px] w-full h-[2px]">
-                         {beam16.left ? (
-                             <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>
-                         ) : (
-                             // Stub Left (only if connected to left 8th)
-                             beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ right: `calc(${100 - centerPercent}% - 1px)`, width: '8px' }}></div>
-                         )}
+    <div
+      onClick={onClick}
+      className="h-full relative cursor-pointer group hover:bg-white/5"
+      // width is controlled by flex so it matches chords/notes
+      style={{ flex: span, minWidth: 0 }}
+      title={`Duration: 1/${duration}`}
+    >
+      {/* Beams Layer */}
+      {isBeamed && (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* 8th Beam (bottom) */}
+          <div className="absolute bottom-0 w-full h-[2px]">
+            {beam8.left && (
+              <div
+                className={`absolute h-full ${beamClass}`}
+                style={{
+                  left: "-0.5px",
+                  width: `calc(${centerPercent}% + 1.5px)`,
+                }}
+              />
+            )}
+            {beam8.right && (
+              <div
+                className={`absolute h-full ${beamClass}`}
+                style={{
+                  left: `calc(${centerPercent}% - 1px)`,
+                  right: "-0.5px",
+                }}
+              />
+            )}
+          </div>
 
-                         {beam16.right ? (
-                             <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>
-                         ) : (
-                             // Stub Right (only if connected to right 8th)
-                             beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, width: '8px' }}></div>
-                         )}
-                    </div>
-                )}
+          {/* 16th Beam (above 8th) */}
+          {duration === "16" && (
+            <div className="absolute bottom-[4px] w-full h-[2px]">
+              {beam16.left ? (
+                <div
+                  className={`absolute h-full ${beamClass}`}
+                  style={{
+                    left: "-0.5px",
+                    width: `calc(${centerPercent}% + 1.5px)`,
+                  }}
+                />
+              ) : (
+                beam8.left && (
+                  <div
+                    className={`absolute h-full ${beamClass}`}
+                    style={{
+                      right: `calc(${100 - centerPercent}% - 1px)`,
+                      width: "8px",
+                    }}
+                  />
+                )
+              )}
+
+              {beam16.right ? (
+                <div
+                  className={`absolute h-full ${beamClass}`}
+                  style={{
+                    left: `calc(${centerPercent}% - 1px)`,
+                    right: "-0.5px",
+                  }}
+                />
+              ) : (
+                beam8.right && (
+                  <div
+                    className={`absolute h-full ${beamClass}`}
+                    style={{
+                      left: `calc(${centerPercent}% - 1px)`,
+                      width: "8px",
+                    }}
+                  />
+                )
+              )}
             </div>
-         )}
+          )}
+        </div>
+      )}
 
-         {/* Symbol Container - Centered in the first step */}
-         <div 
-            className="absolute top-0 bottom-0 flex items-center justify-center pointer-events-none"
-            style={{ left: 0, width: `${singleStepWidth}%` }}
-         >
-             <svg width="20" height="32" viewBox="0 0 20 32" className="overflow-visible">
-                 {renderSymbol()}
-             </svg>
-         </div>
-         
-         {/* Right Border separator */}
-         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none"></div>
+      {/* Symbol, centered in the whole span (so it lines up with the fret number) */}
+      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-center pointer-events-none">
+        <svg
+          width="20"
+          height="32"
+          viewBox="0 0 20 32"
+          className="overflow-visible"
+        >
+          {renderSymbol()}
+        </svg>
       </div>
-  )
+
+      {/* Right border */}
+      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none" />
+    </div>
+  );
+};
+
+type Connection = {
+  fromCol: number;
+  fromStr: number;
+  toCol: number;
+  toStr: number;
 };
 
 interface TabGridProps {
@@ -134,7 +241,7 @@ interface TabGridProps {
   isZoomed: boolean;
   editRowStartBarIndex: number; // Controlled by App
   activeCell: { col: number; str: number } | null;
-  connections: { col: number; str: number }[];
+  connections: Connection[];
   onActiveCellChange: (cell: { col: number; str: number } | null) => void;
   onEditRowStartChange: (index: number) => void;
   onTuningChange: (stringIndex: number, newVal: string) => void;
@@ -320,57 +427,6 @@ export const TabGrid: React.FC<TabGridProps> = ({
     onEditRowStartChange(newStart);
   };
 
-  // Pre-process chains outside loop
-  const chains: { col: number; endCol: number; str: number }[] = [];
-  {
-      const used = new Set<string>();
-      const sorted = [...connections].sort((a,b) => a.col - b.col);
-      const connMap = new Set(connections.map(c => `${c.col},${c.str}`));
-
-      sorted.forEach(conn => {
-          const key = `${conn.col},${conn.str}`;
-          if (used.has(key)) return;
-
-          let start = conn.col;
-          let str = conn.str;
-          
-          let nextNoteIdx = -1;
-          for(let i = start + 1; i < columns.length; i++) {
-              if (columns[i][str] !== -1) {
-                  nextNoteIdx = i;
-                  break;
-              }
-          }
-          if (nextNoteIdx === -1) return;
-
-          used.add(key);
-          let currentEnd = nextNoteIdx;
-
-          // Try to chain
-          while(true) {
-              const nextKey = `${currentEnd},${str}`;
-              if (connMap.has(nextKey)) {
-                  used.add(nextKey);
-                  let farNoteIdx = -1;
-                  for(let i = currentEnd + 1; i < columns.length; i++) {
-                      if (columns[i][str] !== -1) {
-                          farNoteIdx = i;
-                          break;
-                      }
-                  }
-                  if (farNoteIdx !== -1) {
-                      currentEnd = farNoteIdx;
-                  } else {
-                      break;
-                  }
-              } else {
-                  break;
-              }
-          }
-          chains.push({ col: start, endCol: currentEnd, str });
-      });
-  }
-
   const renderPreviewSection = (startBar: number, endBar: number) => {
     const barsToRender = displayBars.slice(startBar, endBar);
     if (barsToRender.length === 0) return null;
@@ -463,256 +519,294 @@ export const TabGrid: React.FC<TabGridProps> = ({
         </div>
 
 
-            {/* "Headstock" Sidebar */}
-            <div className="absolute left-0 top-0 bottom-0 w-14 z-20 flex flex-col">
-                {/* Spacer for chords */}
-                <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0`}></div>
-                
-                {/* Main Headstock Block */}
-                <div className="flex-1 bg-gray-800 rounded-l-lg border border-gray-700 border-r-0 shadow-lg flex flex-col py-1 overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
-                    
-                    {/* Top Label */}
-                    <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-b border-gray-700/50`}>
-                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Chd</span>
-                    </div>
+        {/* "Headstock" Sidebar */}
+        <div className="absolute left-0 top-0 bottom-0 w-14 z-20 flex flex-col">
+          {/* Spacer for chords */}
+          <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0`}></div>
+          
+          {/* Main Headstock Block */}
+          <div className="flex-1 bg-gray-800 rounded-l-lg border border-gray-700 border-r-0 shadow-lg flex flex-col py-1 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+              
+              {/* Top Label */}
+              <div className={`${DIM.CHORD_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-b border-gray-700/50`}>
+                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Chd</span>
+              </div>
 
-                    {/* Tuning Inputs */}
-                    <div className="flex-1 flex flex-col justify-center relative">
-                        {tuning.map((label, i) => (
-                            <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1 relative group`}>
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-600 rounded-full -ml-1 shadow-inner"></div>
-                                <input 
-                                    type="text"
-                                    value={label}
-                                    onChange={(e) => onTuningChange(i, e.target.value)}
-                                    className="w-full bg-transparent text-center font-bold font-mono focus:outline-none border-transparent text-sm text-gray-300 focus:text-cyan-400 hover:text-white transition-colors cursor-text z-10"
-                                    maxLength={2}
-                                />
-                            </div>
-                        ))}
-                    </div>
+              {/* Tuning Inputs */}
+              <div className="flex-1 flex flex-col justify-center relative">
+                  {tuning.map((label, i) => (
+                      <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1 relative group`}>
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-600 rounded-full -ml-1 shadow-inner"></div>
+                          <input 
+                              type="text"
+                              value={label}
+                              onChange={(e) => onTuningChange(i, e.target.value)}
+                              className="w-full bg-transparent text-center font-bold font-mono focus:outline-none border-transparent text-sm text-gray-300 focus:text-cyan-400 hover:text-white transition-colors cursor-text z-10"
+                              maxLength={2}
+                          />
+                      </div>
+                  ))}
+              </div>
 
-                    {/* Bottom Label */}
-                    <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-t border-gray-700/50`}>
-                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Dur</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className={`flex overflow-x-auto pb-2 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl ${isZoomed ? '' : 'w-full'}`}>
-                 <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
-                    {barsToRender.map((_, barOffset) => {
-                        const actualBarIdx = editRowStartBarIndex + barOffset;
-                        const barStartColIdx = rowStartColIndex + (barOffset * stepsPerBar);
-                        const isBarActive = actualBarIdx === activeBarIndex;
-
-                        const markers: any[] = [];
-                        let totalStepsUsed = 0;
-                        let i = 0;
-                        while(i < stepsPerBar) {
-                           const globalIdx = barStartColIdx + i;
-                           const d = durations[globalIdx] || '8';
-                           const span = getDurationSteps(d);
-                           markers.push({ globalIdx: globalIdx, colIdx: i, duration: d, span: span });
-                           totalStepsUsed += span;
-                           i += span;
-                        }
-                        const isValidDuration = totalStepsUsed === stepsPerBar;
-
-                        const markersWithBeams = markers.map((m, idx) => {
-                             const is8or16 = m.duration === '8' || m.duration === '16';
-                             const is16 = m.duration === '16';
-                             const currentBeat = Math.floor(m.colIdx / 4);
-
-                             let beam8Right = false;
-                             let beam16Right = false;
-                             const next = markers[idx + 1];
-                             if (next) {
-                                 const nextBeat = Math.floor(next.colIdx / 4);
-                                 const nextIs8or16 = next.duration === '8' || next.duration === '16';
-                                 const nextIs16 = next.duration === '16';
-                                 if (currentBeat === nextBeat) {
-                                     if (is8or16 && nextIs8or16) beam8Right = true;
-                                     if (is16 && nextIs16) beam16Right = true;
-                                 }
-                             }
-
-                             let beam8Left = false;
-                             let beam16Left = false;
-                             const prev = markers[idx - 1];
-                             if (prev) {
-                                 const prevBeat = Math.floor(prev.colIdx / 4);
-                                 const prevIs8or16 = prev.duration === '8' || prev.duration === '16';
-                                 const prevIs16 = prev.duration === '16';
-                                 if (currentBeat === prevBeat) {
-                                     if (is8or16 && prevIs8or16) beam8Left = true;
-                                     if (is16 && prevIs16) beam16Left = true;
-                                 }
-                             }
-                             return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
-                        });
-
-                        // Calculate Connections SVG (Using Chains)
-                        const connectionPaths: React.ReactElement[] = [];
-                        const barChains = chains.filter(c => c.col >= barStartColIdx && c.col < barStartColIdx + stepsPerBar);
-                        
-                        barChains.forEach((chain, idx) => {
-                             const startMarker = markers.find(m => m.globalIdx === chain.col);
-                             if (!startMarker) return;
-
-                             // Start X is standard logic
-                             const startXPercent = (startMarker.colIdx / stepsPerBar) * 100 + ((startMarker.span / stepsPerBar) * 100) / 2;
-                             
-                             // End X based on distance
-                             const distSteps = chain.endCol - chain.col;
-                             const endXPercent = startXPercent + (distSteps / stepsPerBar) * 100;
-                             
-                             // Y coordinate
-                             const y = chain.str * STRING_H_PX + STRING_H_PX / 2;
-                             
-                             const midX = (startXPercent + endXPercent) / 2;
-                             const curveHeight = 12; 
-                             const ctrlY = y - curveHeight;
-
-                             connectionPaths.push(
-                                 <path 
-                                    key={`${chain.col}-${chain.str}-${idx}`}
-                                    d={`M ${startXPercent} ${y - 4} Q ${midX} ${ctrlY} ${endXPercent} ${y - 4}`}
-                                    fill="none"
-                                    stroke="#cbd5e1"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    className="hover:stroke-cyan-400 cursor-pointer transition-colors duration-200"
-                                    style={{ pointerEvents: 'auto', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))' }}
-                                    onDoubleClick={() => onRemoveConnectionChain?.(chain.col, chain.endCol, chain.str)}
-                                 >
-                                    <title>Double click to remove</title>
-                                 </path>
-                             )
-                        });
-
-                        return (
-                            <div key={actualBarIdx} 
-                                 className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 
-                                    ${isZoomed ? 'flex-shrink-0' : 'flex-1'}
-                                    ${isBarActive ? 'bg-gray-800/30' : ''}
-                                 `}
-                                 style={{ minWidth: isZoomed ? '400px' : '0' }}
-                            >
-                                <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold bg-[#111827] px-1 rounded">
-                                    {actualBarIdx + 1}
-                                </div>
-
-                                {/* Top Spacer aligns with headstock top margin */}
-                                <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
-
-                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative border-b border-gray-800 bg-gray-900/50`}>
-                                   {markersWithBeams.map((marker) => {
-                                      const widthPercent = (marker.span / stepsPerBar) * 100;
-                                      const chord = chordNames[marker.globalIdx];
-                                      return (
-                                          <div key={`chord-${marker.globalIdx}`} 
-                                               className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group"
-                                               style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
-                                          >
-                                              <input
-                                                 type="text"
-                                                 value={chord || ''}
-                                                 onChange={(e) => onUpdateChord(marker.globalIdx, e.target.value)}
-                                                 onFocus={() => {
-                                                     onActiveCellChange({ col: marker.globalIdx, str: 0 })
-                                                 }}
-                                                 className="w-full h-full bg-transparent text-center font-bold text-cyan-400 placeholder-gray-700 focus:outline-none text-[10px] focus:bg-gray-800 transition-colors"
-                                                 placeholder="+"
-                                              />
-                                          </div>
-                                      );
-                                   })}
-                                </div>
-
-                                <div className="flex flex-col w-full relative"> 
-                                    {/* Connection SVG Overlay */}
-                                    <div className="absolute inset-0 z-20 pointer-events-none overflow-visible">
-                                        <svg width="100%" height="100%" viewBox={`0 0 100 ${instrument.stringCount * STRING_H_PX}`} preserveAspectRatio="none" className="overflow-visible">
-                                            {connectionPaths}
-                                        </svg>
-                                    </div>
-
-                                    {Array.from({ length: instrument.stringCount }).map((_, strIdx) => {
-                                        // Visual string thickness calculation
-                                        // Lower strings (higher index) should be thicker
-                                        const thickness = 1 + (strIdx / (instrument.stringCount - 1)) * 2;
-                                        
-                                        return (
-                                        <div key={strIdx} className={`flex ${DIM.STRING_HEIGHT} relative last:border-0`}>
-                                            {/* String Line Background */}
-                                            <div className="absolute inset-x-0 bg-gray-600 z-0 pointer-events-none" 
-                                                 style={{ 
-                                                     height: `${thickness}px`, 
-                                                     top: '50%', 
-                                                     marginTop: `-${thickness/2}px`,
-                                                     opacity: 0.3 + (strIdx * 0.1) // Lower strings slightly more opaque
-                                                 }}>
-                                            </div>
-
-                                            {markersWithBeams.map((marker) => {
-                                                const globalColIdx = marker.globalIdx;
-                                                const widthPercent = (marker.span / stepsPerBar) * 100;
-                                                const isPlayingThisCell = currentColumnIndex >= marker.globalIdx && currentColumnIndex < marker.globalIdx + marker.span;
-
-                                                return (
-                                                    <div key={globalColIdx} 
-                                                         className="flex-1 relative border-r border-gray-800 last:border-0"
-                                                         style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
-                                                    >
-                                                         {strIdx === 0 && isPlayingThisCell && (
-                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
-                                                        )}
-                                                        {isPlayingThisCell && (
-                                                            <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-cyan-500/50 z-30 pointer-events-none"></div>
-                                                        )}
-                                                        <TabCell
-                                                            note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
-                                                            stringIndex={strIdx}
-                                                            columnIndex={globalColIdx}
-                                                            isActive={activeCell?.col === globalColIdx && activeCell?.str === strIdx}
-                                                            onFocus={() => onActiveCellChange({ col: globalColIdx, str: strIdx })}
-                                                            onUpdate={(val) => handleUpdateNote(globalColIdx, strIdx, val)}
-                                                            onNavigate={(dir) => handleNavigate(globalColIdx, strIdx, dir)}
-                                                        />
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )})}
-                                </div>
-
-                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-800 bg-gray-900/50 relative`}>
-                                     {markersWithBeams.map((marker) => {
-                                         const widthPercent = (marker.span / stepsPerBar) * 100;
-                                         return (
-                                            <DurationMarker 
-                                                key={marker.globalIdx}
-                                                duration={marker.duration}
-                                                widthPercent={widthPercent}
-                                                span={marker.span}
-                                                onClick={() => handleDurationClick(marker.globalIdx)}
-                                                beam8={marker.beam8}
-                                                beam16={marker.beam16}
-                                            />
-                                         )
-                                     })}
-                                     {!isValidDuration && (
-                                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse" title="Bar duration mismatch"></div>
-                                     )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                 </div>
-            </div>
+              {/* Bottom Label */}
+              <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-t border-gray-700/50`}>
+                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Dur</span>
+              </div>
+          </div>
         </div>
+
+        <div className={`flex overflow-x-auto pb-2 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl ${isZoomed ? '' : 'w-full'}`}>
+          <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
+            {barsToRender.map((_, barOffset) => {
+              const actualBarIdx = editRowStartBarIndex + barOffset;
+              const barStartColIdx = rowStartColIndex + (barOffset * stepsPerBar);
+              const isBarActive = actualBarIdx === activeBarIndex;
+
+              const markers: {
+                globalIdx: number;
+                colIdx: number;
+                duration: NoteDuration;
+                span: number;
+                beam8: { left: boolean; right: boolean };
+                beam16: { left: boolean; right: boolean };
+              }[] = [];
+
+              let totalStepsUsed = 0;
+              let i = 0;
+              while(i < stepsPerBar) {
+                  const globalIdx = barStartColIdx + i;
+                  const d = durations[globalIdx] || '8';
+                  const span = getDurationSteps(d);
+                  markers.push({ globalIdx: globalIdx, colIdx: i, duration: d, span: span, beam8: {left:false,right:false}, beam16:{left:false,right:false} });
+                  totalStepsUsed += span;
+                  i += span;
+              }
+              const isValidDuration = totalStepsUsed === stepsPerBar;
+
+              const markersWithBeams = markers.map((m, idx) => {
+                   const is8or16 = m.duration === '8' || m.duration === '16';
+                   const is16 = m.duration === '16';
+                   const currentBeat = Math.floor(m.colIdx / 4);
+
+                   let beam8Right = false;
+                   let beam16Right = false;
+                   const next = markers[idx + 1];
+                   if (next) {
+                       const nextBeat = Math.floor(next.colIdx / 4);
+                       const nextIs8or16 = next.duration === '8' || next.duration === '16';
+                       const nextIs16 = next.duration === '16';
+                       if (currentBeat === nextBeat) {
+                           if (is8or16 && nextIs8or16) beam8Right = true;
+                           if (is16 && nextIs16) beam16Right = true;
+                       }
+                   }
+
+                   let beam8Left = false;
+                   let beam16Left = false;
+                   const prev = markers[idx - 1];
+                   if (prev) {
+                       const prevBeat = Math.floor(prev.colIdx / 4);
+                       const prevIs8or16 = prev.duration === '8' || prev.duration === '16';
+                       const prevIs16 = prev.duration === '16';
+                       if (currentBeat === prevBeat) {
+                           if (is8or16 && prevIs8or16) beam8Left = true;
+                           if (is16 && prevIs16) beam16Left = true;
+                       }
+                   }
+                   return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
+              });
+
+              // ---- Connection paths for this bar (using new Connection objects) ----
+              const connectionPaths: React.ReactElement[] = [];
+              const barConnections = connections.filter(
+                conn =>
+                  conn.fromCol >= barStartColIdx &&
+                  conn.fromCol < barStartColIdx + stepsPerBar
+              );
+              
+              barConnections.forEach((conn, idxConn) => {
+                const startMarker = markersWithBeams.find(m => m.globalIdx === conn.fromCol);
+                if (!startMarker) return;
+              
+                const startX =
+                  (startMarker.colIdx / stepsPerBar) * 100 +
+                  ((startMarker.span / stepsPerBar) * 100) / 2;
+              
+                // Distance in steps → proportion of the bar width
+                const distSteps = conn.toCol - conn.fromCol;
+                const endX = startX + (distSteps / stepsPerBar) * 100;
+              
+                const fromY = conn.fromStr * STRING_H_PX + STRING_H_PX / 2;
+                const toY = conn.toStr * STRING_H_PX + STRING_H_PX / 2;
+                const sameString = conn.fromStr === conn.toStr;
+              
+                const midX = (startX + endX) / 2;
+              
+                // Make the arch height scale with distance a bit so long ties look smoother
+                const distanceRatio = Math.min(1, Math.abs(endX - startX) / 100);
+                const baseHeight = sameString ? 18 : 14;
+                const curveHeight = baseHeight + distanceRatio * 6;
+              
+                const startY = sameString ? fromY - 8 : fromY - 6;
+                const endY   = sameString ? toY   - 8 : toY   - 6;
+                const ctrlY  = Math.min(fromY, toY) - curveHeight;
+              
+                connectionPaths.push(
+                  <path
+                    key={`${conn.fromCol}-${conn.fromStr}-${conn.toCol}-${conn.toStr}-${idxConn}`}
+                    d={`M ${startX} ${startY} Q ${midX} ${ctrlY} ${endX} ${endY}`}
+                    fill="none"
+                    stroke="#cbd5e1"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    className="hover:stroke-cyan-400 cursor-pointer transition-colors duration-200"
+                    style={{
+                      pointerEvents: 'auto',
+                      filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))',
+                    }}
+                    onDoubleClick={() =>
+                      onRemoveConnectionChain?.(conn.fromCol, conn.toCol, conn.fromStr)
+                    }
+                  >
+                    <title>Double click to remove</title>
+                  </path>
+                );
+              });
+
+
+              return (
+                <div key={actualBarIdx} 
+                     className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 
+                        ${isZoomed ? 'flex-shrink-0' : 'flex-1'}
+                        ${isBarActive ? 'bg-gray-800/30' : ''}
+                     `}
+                     style={{ minWidth: isZoomed ? '400px' : '0' }}
+                >
+                  <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold bg-[#111827] px-1 rounded">
+                      {actualBarIdx + 1}
+                  </div>
+
+                  {/* Top Spacer aligns with headstock top margin */}
+                  <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
+
+                  <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative border-b border-gray-800 bg-gray-900/50`}>
+                    {markersWithBeams.map((marker) => {
+                      const chord = chordNames[marker.globalIdx];
+                      return (
+                        <div
+                          key={`chord-${marker.globalIdx}`}
+                          className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group"
+                          style={{ flex: marker.span, minWidth: 0 }}
+                        >
+                          <input
+                            type="text"
+                            value={chord || ''}
+                            onChange={(e) => onUpdateChord(marker.globalIdx, e.target.value)}
+                            onFocus={() => {
+                                onActiveCellChange({ col: marker.globalIdx, str: 0 })
+                            }}
+                            className="w-full h-full bg-transparent text-center font-bold text-cyan-400 placeholder-gray-700 focus:outline-none text-[10px] focus:bg-gray-800 transition-colors"
+                            placeholder="+"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-col w-full relative"> 
+                    {/* Connection SVG Overlay */}
+                    <div className="absolute inset-0 z-20 pointer-events-none overflow-visible">
+                      <svg
+                        width="100%"
+                        height="100%"
+                        viewBox={`0 0 100 ${instrument.stringCount * STRING_H_PX}`}
+                        preserveAspectRatio="none"
+                        className="overflow-visible"
+                      >
+                        {connectionPaths}
+                      </svg>
+                    </div>
+
+                    {Array.from({ length: instrument.stringCount }).map((_, strIdx) => {
+                      // Visual string thickness calculation
+                      // Lower strings (higher index) should be thicker
+                      const thickness = 1 + (strIdx / (instrument.stringCount - 1)) * 2;
+                      
+                      return (
+                        <div key={strIdx} className={`flex ${DIM.STRING_HEIGHT} relative last:border-0`}>
+                          {/* String Line Background */}
+                          <div className="absolute inset-x-0 bg-gray-600 z-0 pointer-events-none" 
+                               style={{ 
+                                   height: `${thickness}px`, 
+                                   top: '50%', 
+                                   marginTop: `-${thickness/2}px`,
+                                   opacity: 0.3 + (strIdx * 0.1) // Lower strings slightly more opaque
+                               }}>
+                          </div>
+
+                          {markersWithBeams.map((marker) => {
+                            const globalColIdx = marker.globalIdx;
+                            const isPlayingThisCell =
+                              currentColumnIndex >= marker.globalIdx &&
+                              currentColumnIndex < marker.globalIdx + marker.span;
+                          
+                            return (
+                              <div
+                                key={globalColIdx}
+                                className="relative border-r border-gray-800 last:border-0"
+                                style={{ flex: marker.span, minWidth: 0 }}
+                              >
+                                {strIdx === 0 && isPlayingThisCell && (
+                                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
+                                )}
+                                {isPlayingThisCell && (
+                                  <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-cyan-500/50 z-30 pointer-events-none"></div>
+                                )}
+                                <TabCell
+                                  note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
+                                  stringIndex={strIdx}
+                                  columnIndex={globalColIdx}
+                                  isActive={
+                                    activeCell?.col === globalColIdx && activeCell?.str === strIdx
+                                  }
+                                  onFocus={() => onActiveCellChange({ col: globalColIdx, str: strIdx })}
+                                  onUpdate={(val) => handleUpdateNote(globalColIdx, strIdx, val)}
+                                  onNavigate={(dir) => handleNavigate(globalColIdx, strIdx, dir)}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )})}
+                  </div>
+
+                  <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-800 bg-gray-900/50 relative`}>
+                    {markersWithBeams.map((marker) => (
+                      <DurationMarker 
+                        key={marker.globalIdx}
+                        duration={marker.duration}
+                        span={marker.span}
+                        onClick={() => handleDurationClick(marker.globalIdx)}
+                        beam8={marker.beam8}
+                        beam16={marker.beam16}
+                      />
+                    ))}
+
+                    {!isValidDuration && (
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"
+                        title="Bar duration mismatch"
+                      ></div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     );
   };
 
