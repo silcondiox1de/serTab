@@ -190,7 +190,7 @@ const App: React.FC = () => {
     if (currentTempoBeat === 'dotted-quarter') {
         engineBpm = bpm * 1.5;
     }
-    audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
+    audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType, connections);
   }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
 
 // --------------------------------------------------------------------------
