@@ -88,7 +88,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   tagline: {
     fontSize: '2rem', // Increased size (was 1.4rem)
-    fontWeight: '300',  
+    fontWeight: '500',  
     color: '#333', // Slightly darker to match the size      
     margin: 0,
     textAlign: 'center',
