@@ -624,33 +624,43 @@ export const TabGrid: React.FC<TabGridProps> = ({
                   conn.fromCol >= barStartColIdx &&
                   conn.fromCol < barStartColIdx + stepsPerBar
               );
-
+              
               barConnections.forEach((conn, idxConn) => {
                 const startMarker = markersWithBeams.find(m => m.globalIdx === conn.fromCol);
                 if (!startMarker) return;
-
-                const startXPercent =
+              
+                const startX =
                   (startMarker.colIdx / stepsPerBar) * 100 +
                   ((startMarker.span / stepsPerBar) * 100) / 2;
-
+              
+                // Distance in steps → proportion of the bar width
                 const distSteps = conn.toCol - conn.fromCol;
-                const endXPercent = startXPercent + (distSteps / stepsPerBar) * 100;
-
+                const endX = startX + (distSteps / stepsPerBar) * 100;
+              
                 const fromY = conn.fromStr * STRING_H_PX + STRING_H_PX / 2;
                 const toY = conn.toStr * STRING_H_PX + STRING_H_PX / 2;
-
-                const midX = (startXPercent + endXPercent) / 2;
-                const curveHeight = 12;
-                const ctrlY = Math.min(fromY, toY) - curveHeight;
-
+                const sameString = conn.fromStr === conn.toStr;
+              
+                const midX = (startX + endX) / 2;
+              
+                // Make the arch height scale with distance a bit so long ties look smoother
+                const distanceRatio = Math.min(1, Math.abs(endX - startX) / 100);
+                const baseHeight = sameString ? 18 : 14;
+                const curveHeight = baseHeight + distanceRatio * 6;
+              
+                const startY = sameString ? fromY - 8 : fromY - 6;
+                const endY   = sameString ? toY   - 8 : toY   - 6;
+                const ctrlY  = Math.min(fromY, toY) - curveHeight;
+              
                 connectionPaths.push(
                   <path
                     key={`${conn.fromCol}-${conn.fromStr}-${conn.toCol}-${conn.toStr}-${idxConn}`}
-                    d={`M ${startXPercent} ${fromY - 4} Q ${midX} ${ctrlY} ${endXPercent} ${toY - 4}`}
+                    d={`M ${startX} ${startY} Q ${midX} ${ctrlY} ${endX} ${endY}`}
                     fill="none"
                     stroke="#cbd5e1"
                     strokeWidth="2"
                     strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
                     className="hover:stroke-cyan-400 cursor-pointer transition-colors duration-200"
                     style={{
                       pointerEvents: 'auto',
@@ -664,6 +674,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                   </path>
                 );
               });
+
 
               return (
                 <div key={actualBarIdx} 
