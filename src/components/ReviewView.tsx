@@ -26,28 +26,29 @@ const getDurationSteps = (d: NoteDuration): number => {
   }
 };
 
+// NOTE: ReviewDurationMarker is no longer used for the print view markers,
+// but kept here in case you want to re-use it later.
 const ReviewDurationMarker = ({ duration, beam8, beam16 }: { duration: NoteDuration, beam8: {left: boolean, right: boolean}, beam16: {left: boolean, right: boolean} }) => {
     const stroke = "black";
     const strokeWidth = 1.5;
     const height = 24;
     const cx = 10;
     
-    // Beam Y positions
     const isBeamed = beam8.left || beam8.right;
 
     switch (duration) {
-          case '1': // Whole Note: Circle
+          case '1':
               return <circle cx={cx} cy={height/2} r="3.5" stroke={stroke} strokeWidth={strokeWidth} fill="none" />;
-          case '2': // Half Note: Stem + Circle head
+          case '2':
                return (
                   <g>
                     <line x1={cx} y1={0} x2={cx} y2={height - 5} stroke={stroke} strokeWidth={strokeWidth} />
                     <circle cx={cx} cy={height - 3} r="3" stroke={stroke} strokeWidth={strokeWidth} fill="none" />
                   </g>
                );
-          case '4': // Quarter Note: Just Stem
+          case '4':
               return <line x1={cx} y1={0} x2={cx} y2={height} stroke={stroke} strokeWidth={strokeWidth} />;
-          case '8': // 8th Note
+          case '8':
               if (isBeamed) {
                   return <line x1={cx} y1={0} x2={cx} y2={24} stroke={stroke} strokeWidth={strokeWidth} />;
               }
@@ -57,7 +58,7 @@ const ReviewDurationMarker = ({ duration, beam8, beam16 }: { duration: NoteDurat
                     <path d={`M ${cx} ${height} Q ${cx+6} ${height-4} ${cx+6} ${height-10}`} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
                   </g>
               );
-          case '16': // 16th Note
+          case '16':
               if (isBeamed) {
                   return <line x1={cx} y1={0} x2={cx} y2={24} stroke={stroke} strokeWidth={strokeWidth} />;
               }
@@ -92,6 +93,16 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const totalBars = Math.ceil(columns.length / stepsPerBar);
   const totalSystems = Math.ceil(totalBars / BARS_PER_SYSTEM);
 
+  // Find last column that actually has a note; used to hide
+  // "ghost" markers after the real music ends.
+  let lastUsedColumn = -1;
+  for (let i = columns.length - 1; i >= 0; i--) {
+    if (columns[i].some(n => n !== -1)) {
+      lastUsedColumn = i;
+      break;
+    }
+  }
+
   // Pre-process chains
   const chains: { col: number; endCol: number; str: number }[] = [];
   {
@@ -118,7 +129,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           used.add(key);
           let currentEnd = nextNoteIdx;
 
-          // Try to chain
           while(true) {
               const nextKey = `${currentEnd},${str}`;
               if (connMap.has(nextKey)) {
@@ -198,18 +208,10 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
               barChains.forEach((chain, idx) => {
                   const localColIdx = chain.col - startColIndex;
-                  
-                  // In ReviewView, notes are positioned exactly on the grid steps, centered at +0.5
-                  // Start X
                   const startXPercent = ((localColIdx + 0.5) / stepsPerBar) * 100;
-                  
-                  // End X based on distance
                   const distSteps = chain.endCol - chain.col;
                   const endXPercent = startXPercent + (distSteps / stepsPerBar) * 100;
-
-                  // Y pos
-                  const y = chain.str * 16 + 8; // Center of row
-                  
+                  const y = chain.str * 16 + 8;
                   const midX = (startXPercent + endXPercent) / 2;
                   const ctrlY = y - 8;
 
@@ -219,7 +221,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                           d={`M ${startXPercent} ${y - 4} Q ${midX} ${ctrlY} ${endXPercent} ${y - 4}`}
                           fill="none"
                           stroke="black"
-                          strokeWidth="1.5"
+                          strokeWidth={1.2}   // a bit thinner
                           strokeLinecap="round"
                           className="hover:stroke-cyan-600 cursor-pointer transition-colors duration-200"
                           style={{ pointerEvents: 'auto' }}
@@ -230,7 +232,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                   );
               });
 
-              // Pre-calculate markers for beams rendering (not needed for connections anymore)
+              // Pre-calculate markers for beams (we no longer render the SVG notes with beams
+              // but keep this in case you want to re-use durations later)
               const markers: any[] = [];
               let i = 0;
               while (i < stepsPerBar) {
@@ -240,30 +243,14 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                   i += span;
               }
 
-              const markersWithBeams = markers.map((m, idx) => {
-                  const is8or16 = m.duration === '8' || m.duration === '16';
-                  const is16 = m.duration === '16';
-                  const currentBeat = Math.floor(m.colIdx / 4);
-                  let beam8Right = false; let beam16Right = false;
-                  const next = markers[idx + 1];
-                  if (next && Math.floor(next.colIdx / 4) === currentBeat) {
-                       if ((is8or16) && (next.duration === '8' || next.duration === '16')) beam8Right = true;
-                       if ((is16) && (next.duration === '16')) beam16Right = true;
-                  }
-                  let beam8Left = false; let beam16Left = false;
-                  const prev = markers[idx - 1];
-                  if (prev && Math.floor(prev.colIdx / 4) === currentBeat) {
-                      if ((is8or16) && (prev.duration === '8' || prev.duration === '16')) beam8Left = true;
-                      if ((is16) && (prev.duration === '16')) beam16Left = true;
-                  }
-                  return { ...m, beam8: {left: beam8Left, right: beam8Right}, beam16: {left: beam16Left, right: beam16Right} };
-              });
-
               return (
                 <div key={bIdx} className="flex-1 border-r-2 border-black relative">
-                  <div className="absolute -top-5 left-0 text-[10px] font-bold text-gray-500 font-mono">
+                  {/* Bar number: bigger, moved up, with white background to avoid overlap */}
+                  <div className="absolute -top-7 left-1 text-xs font-bold text-gray-700 font-mono bg-white px-1 rounded-sm shadow-[0_0_0_1px_rgba(0,0,0,0.05)]">
                     {bar.barIndex + 1}
                   </div>
+
+                  {/* String lines */}
                   <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
                     {Array.from({length: instrument.stringCount}).map((_, i) => (
                       <div key={i} className="w-full border-t border-gray-300 print:border-gray-500"></div>
@@ -297,44 +284,30 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                      ))}
                   </div>
 
-                  <div className="absolute top-full left-0 w-full h-8 mt-1 pointer-events-none">
-                      {markersWithBeams.map((m, mIdx) => {
-                          const widthPercent = (m.span / stepsPerBar) * 100;
-                          const leftPercent = (m.colIdx / stepsPerBar) * 100;
-                          const singleStepWidth = 100 / m.span;
-                          const centerPercent = singleStepWidth / 2;
-                          const isBeamed = m.beam8.left || m.beam8.right;
-                          const beamClass = "bg-black";
-
-                          return (
-                            <div 
-                              key={mIdx}
-                              className="absolute top-0 h-full"
-                              style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                            >
-                               {/* Beams */}
-                               {isBeamed && (
-                                  <div className="absolute inset-0">
-                                      <div className="absolute bottom-0 w-full h-[2px]">
-                                          {m.beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>}
-                                          {m.beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>}
-                                      </div>
-                                      {m.duration === '16' && (
-                                          <div className="absolute bottom-[4px] w-full h-[2px]">
-                                              {m.beam16.left ? <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div> : m.beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ right: `calc(${100 - centerPercent}% - 1px)`, width: '8px' }}></div>}
-                                              {m.beam16.right ? <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div> : m.beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, width: '8px' }}></div>}
-                                          </div>
-                                      )}
-                                  </div>
-                               )}
-                               <div className="absolute top-0 bottom-0 flex items-center justify-center" style={{ left: 0, width: `${singleStepWidth}%` }}>
-                                   <svg width="20" height="24" viewBox="0 0 20 24" className="overflow-visible">
-                                      <ReviewDurationMarker duration={m.duration} beam8={m.beam8} beam16={m.beam16} />
-                                   </svg>
-                               </div>
-                            </div>
-                          );
+                  {/* NEW: simplified duration / beat markers
+                      - thin ticks
+                      - shorter height
+                      - nothing rendered after the last real note */}
+                  <div className="absolute top-full left-0 w-full h-6 mt-1 pointer-events-none">
+                    <div className="flex w-full h-full items-end">
+                      {Array.from({ length: stepsPerBar }).map((_, stepIdx) => {
+                        const globalIdx = startColIndex + stepIdx;
+                        if (lastUsedColumn === -1 || globalIdx > lastUsedColumn) {
+                          return <div key={stepIdx} className="flex-1" />;
+                        }
+                        return (
+                          <div
+                            key={stepIdx}
+                            className="flex-1 flex items-end justify-center"
+                          >
+                            <div
+                              className="w-px bg-gray-500"
+                              style={{ height: 9, opacity: 0.6 }}
+                            />
+                          </div>
+                        );
                       })}
+                    </div>
                   </div>
                 </div>
               );
@@ -365,7 +338,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 color: black !important;
                 display: block !important;
             }
-            /* Force background colors and borders to print */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
