@@ -9,6 +9,7 @@ import { audioEngine } from './services/audioEngine';
 import { optimizeFingering } from './services/luthier';
 import { generateRiff } from './services/composer';
 
+// --- HELPERS ---
 const NOTE_OFFSETS: Record<string, number> = { 'c': 0, 'c#': 1, 'db': 1, 'd': 2, 'd#': 3, 'eb': 3, 'e': 4, 'f': 5, 'f#': 6, 'gb': 6, 'g': 7, 'g#': 8, 'ab': 8, 'a': 9, 'a#': 10, 'bb': 10, 'b': 11 };
 const BASE_C0 = 16.3516;
 
@@ -49,6 +50,7 @@ interface HistoryState { columns: TabColumn[]; durations: NoteDuration[]; chordN
 const App: React.FC = () => {
   useEffect(() => { document.title = "Tab | Serum Lab"; }, []);
 
+  // --- STATE ---
   const [instrumentType, setInstrumentType] = useState<InstrumentType>('guitar');
   const [timeSignature, setTimeSignature] = useState<TimeSignatureType>('4/4');
   const [bpm, setBpm] = useState<number>(120); 
@@ -73,35 +75,25 @@ const App: React.FC = () => {
   const [clipboard, setClipboard] = useState<HistoryState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const initialTsConfig = TIME_SIGNATURES['4/4'];
-  const initialSteps = initialTsConfig.stepsPerBar * 4;
-  const [columns, setColumns] = useState<TabColumn[]>(createEmptyColumns(initialSteps, INSTRUMENTS['guitar'].stringCount));
-  const [durations, setDurations] = useState<NoteDuration[]>(createDefaultDurations(initialSteps));
-  const [chordNames, setChordNames] = useState<(string | null)[]>(Array(initialSteps).fill(null));
-
   const currentInstrument = INSTRUMENTS[instrumentType];
   const currentStepsPerBar = TIME_SIGNATURES[timeSignature].stepsPerBar;
   const currentTempoBeat = TIME_SIGNATURES[timeSignature].tempoBeat;
 
-  // --- REF FOR KEYBOARD SHORTCUTS (The Fix) ---
-  // We store all current state/handlers in a ref so the event listener can access them fresh.
-  const stateRef = useRef({
-      activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar,
-      // Placeholders for functions defined later
-      handleSaveProject: () => {}, 
-      handleTogglePlay: () => {}, 
-      undo: () => {}, 
-      redo: () => {}, 
-      handleToggleConnection: () => {}, 
-      handleCopyBar: () => {}, 
-      handlePasteBar: () => {}
-  });
+  // Ref to hold latest state/handlers for keyboard listener (Prevents Stale State)
+  const stateRef = useRef<any>({});
 
+  // --- INITIALIZATION ---
   useEffect(() => {
      const initialState = { columns: createEmptyColumns(initialSteps, INSTRUMENTS['guitar'].stringCount), durations: createDefaultDurations(initialSteps), chordNames: Array(initialSteps).fill(null), connections: [] };
      setHistory([initialState]);
      setHistoryIndex(0);
   }, []);
+
+  const initialTsConfig = TIME_SIGNATURES['4/4'];
+  const initialSteps = initialTsConfig.stepsPerBar * 4;
+  const [columns, setColumns] = useState<TabColumn[]>(createEmptyColumns(initialSteps, INSTRUMENTS['guitar'].stringCount));
+  const [durations, setDurations] = useState<NoteDuration[]>(createDefaultDurations(initialSteps));
+  const [chordNames, setChordNames] = useState<(string | null)[]>(Array(initialSteps).fill(null));
 
   const getDefaultDuration = useCallback((ts: TimeSignatureType): NoteDuration => {
       const parts = ts.split('/');
@@ -119,6 +111,7 @@ const App: React.FC = () => {
     audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
   }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
 
+  // --- HISTORY & UNDO/REDO ---
   const updateStateWithHistory = (newColumns: TabColumn[], newDurations: NoteDuration[], newChordNames: (string | null)[], newConnections: { col: number; str: number }[]) => {
       const newState: HistoryState = { columns: newColumns, durations: newDurations, chordNames: newChordNames, connections: newConnections };
       const newHistory = history.slice(0, historyIndex + 1);
@@ -129,6 +122,10 @@ const App: React.FC = () => {
       setColumns(newColumns); setDurations(newDurations); setChordNames(newChordNames); setConnections(newConnections);
   };
 
+  const undo = () => { if (historyIndex > 0) { const s = history[historyIndex - 1]; setColumns(s.columns); setDurations(s.durations); setChordNames(s.chordNames); setConnections(s.connections); setHistoryIndex(historyIndex - 1); setToastMessage("Undo"); } };
+  const redo = () => { if (historyIndex < history.length - 1) { const s = history[historyIndex + 1]; setColumns(s.columns); setDurations(s.durations); setChordNames(s.chordNames); setConnections(s.connections); setHistoryIndex(historyIndex + 1); setToastMessage("Redo"); } };
+
+  // --- HANDLERS ---
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
     if (!columns.every(col => col.every(n => n === -1)) && !window.confirm(`Switching instruments will clear tab. Continue?`)) return;
@@ -202,9 +199,6 @@ const App: React.FC = () => {
     } catch (error) { console.error(error); setToastMessage("AI Error. Check Console."); } 
     finally { setIsGenerating(false); }
   };
-
-  const undo = () => { if (historyIndex > 0) { const s = history[historyIndex - 1]; setColumns(s.columns); setDurations(s.durations); setChordNames(s.chordNames); setConnections(s.connections); setHistoryIndex(historyIndex - 1); setToastMessage("Undo"); } };
-  const redo = () => { if (historyIndex < history.length - 1) { const s = history[historyIndex + 1]; setColumns(s.columns); setDurations(s.durations); setChordNames(s.chordNames); setConnections(s.connections); setHistoryIndex(historyIndex + 1); setToastMessage("Redo"); } };
 
   const handleUpdateColumn = (idx: number, col: TabColumn) => { const nC = [...columns]; nC[idx] = col; updateStateWithHistory(nC, durations, chordNames, connections); };
   const handleUpdateDuration = (idx: number, d: NoteDuration) => { const nD = [...durations]; nD[idx] = d; updateStateWithHistory(columns, nD, chordNames, connections); };
@@ -322,12 +316,7 @@ const App: React.FC = () => {
         try {
             const project = JSON.parse(ev.target?.result as string);
             if (project && Array.isArray(project.columns) && window.confirm("Import project?")) {
-                audioEngine.stop(); setIsPlaying(false); setCurrentColIndex(-1); setActiveCell(null); setEditRowStartBarIndex(0);
-                setSongTitle(project.title || "Untitled"); setBpm(project.bpm || 120); setInstrumentType(project.instrumentType); setTimeSignature(project.timeSignature || '4/4');
-                setColumns(project.columns); setDurations(project.durations); setConnections(project.connections || []);
-                setChordNames(project.chordNames?.length === project.columns.length ? project.chordNames : Array(project.columns.length).fill(null));
-                setCustomTuning(project.tuning || INSTRUMENTS[project.instrumentType].strings);
-                setHistory([{ columns: project.columns, durations: project.durations, chordNames: project.chordNames || [], connections: project.connections || [] }]); setHistoryIndex(0); setGridKey(p => p + 1);
+                loadProjectState(project);
                 setToastMessage("Project Imported");
             }
         } catch (err) { alert("Invalid file."); }
@@ -335,6 +324,36 @@ const App: React.FC = () => {
     };
     reader.readAsText(file);
   };
+
+  const loadProjectState = (project: SavedProject) => {
+    audioEngine.stop(); setIsPlaying(false); setCurrentColIndex(-1); setActiveCell(null); setEditRowStartBarIndex(0);
+    setSongTitle(project.title || "Untitled"); setBpm(project.bpm || 120); setInstrumentType(project.instrumentType); setTimeSignature(project.timeSignature || '4/4');
+    setColumns(project.columns); setDurations(project.durations); setConnections(project.connections || []);
+    setChordNames(project.chordNames?.length === project.columns.length ? project.chordNames : Array(project.columns.length).fill(null));
+    setCustomTuning(project.tuning || INSTRUMENTS[project.instrumentType].strings);
+    setHistory([{ columns: project.columns, durations: project.durations, chordNames: project.chordNames || [], connections: project.connections || [] }]); setHistoryIndex(0); setGridKey(p => p + 1);
+    setToastMessage("Project Imported");
+  };
+
+  const handleRestoreDraft = () => {
+    const s = localStorage.getItem('serumTab_autoSave');
+    if (s && window.confirm("Restore draft?")) {
+        try { 
+            const p = JSON.parse(s); 
+            setColumns(p.columns); setDurations(p.durations); setConnections(p.connections||[]); setSongTitle(p.title); setBpm(p.bpm); setInstrumentType(p.instrumentType);
+            setHistory([{columns: p.columns, durations: p.durations, chordNames: p.chordNames||[], connections: p.connections||[]}]); setHistoryIndex(0); setGridKey(k=>k+1);
+            setToastMessage("Session Restored");
+        } catch(e) {}
+    }
+  };
+
+  useEffect(() => {
+      if (saveStatus !== 'modified') setSaveStatus('modified');
+      const t = setTimeout(() => { setSaveStatus('saving'); localStorage.setItem('serumTab_autoSave', JSON.stringify(getProjectState())); setHasDraft(true); setTimeout(() => setSaveStatus('saved'), 500); }, 2000);
+      return () => clearTimeout(t);
+  }, [songTitle, bpm, instrumentType, timeSignature, columns, durations, customTuning, chordNames, connections]);
+
+  useEffect(() => { if (localStorage.getItem('serumTab_autoSave')) setHasDraft(true); }, []);
 
   const handleTogglePlay = () => {
     if (isPlaying) { audioEngine.stop(); setIsPlaying(false); setCurrentColIndex(-1); }
@@ -347,27 +366,28 @@ const App: React.FC = () => {
   const handlePlayFromStart = () => { audioEngine.stop(); audioEngine.start(0); setIsPlaying(true); };
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (FIXED)
+  // KEYBOARD SHORTCUTS (SAFE REF PATTERN)
   // --------------------------------------------------------------------------
   
-  // 1. Update Ref EVERY Render
+  // 1. Update Ref on every render so it ALWAYS has the latest state & handlers
   useEffect(() => {
       stateRef.current = { 
           activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar,
           handleSaveProject, handleTogglePlay, undo, redo, handleToggleConnection, handleCopyBar, handlePasteBar
       };
-  }); // Missing deps array = runs on every render = always fresh
+  });
 
-  // 2. Listener attaches ONCE, reads Ref
+  // 2. Event Listener (runs once)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = stateRef.current; // Access Fresh Data
+        const current = stateRef.current;
         const target = e.target as HTMLElement;
-        // Only block shortcuts if typing in the specific project title input or large text areas
-        const isTitleInput = target.id === 'project-title'; 
-        const isOtherInput = !isTitleInput && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
-
-        if (isOtherInput) return; 
+        
+        // IMPORTANT: Only block shortcuts if typing in TITLE input (id="project-title")
+        // We allow shortcuts inside grid inputs because users want to copy/paste bars while selecting cells
+        const isTitleInput = target.id === 'project-title';
+        
+        if (isTitleInput) return; // Let browser handle text copy/paste in title
 
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); current.handleSaveProject(); return; }
         if (current.isReviewMode) return;
@@ -377,26 +397,25 @@ const App: React.FC = () => {
         
         // COPY
         if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') { 
-            if (isTitleInput) return;
+            // We prevent default to stop browser from copying cell text (e.g. "3")
+            // Instead we run our Bar Copy
             e.preventDefault(); 
             current.handleCopyBar(); 
             return; 
         }
-
         // PASTE
         if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') { 
-            if (isTitleInput) return;
             e.preventDefault(); 
             current.handlePasteBar(); 
             return; 
         }
         
-        if (e.code === 'KeyL' && !isTitleInput) { e.preventDefault(); current.handleToggleConnection(); return; }
+        if (e.code === 'KeyL') { e.preventDefault(); current.handleToggleConnection(); return; }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); 
+  }, []);
 
   if (isReviewMode) {
     return <ReviewView title={songTitle} bpm={bpm} timeSignature={timeSignature} instrument={currentInstrument} tuning={customTuning} columns={columns} durations={durations} chordNames={chordNames} connections={connections} onClose={() => setIsReviewMode(false)} onRemoveConnectionChain={handleRemoveConnectionChain} />;
