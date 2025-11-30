@@ -705,100 +705,63 @@ const handleGenerate = async () => {
   };
 
 
-  // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-based for stability)
+   // --------------------------------------------------------------------------
+  // Global Keyboard Shortcuts (Ref-Based for reliability)
   // --------------------------------------------------------------------------
   
-  // Keep a ref to the latest state so the event listener never sees "stale" data
-  const stateRef = useRef({
-      activeCell,
-      clipboard,
-      historyIndex,
-      history,
-      isReviewMode,
-      isPlaying,
-      columns // Needed for checks
-  });
-
-  // Update ref whenever relevant state changes
+  // 1. Keep ref updated with latest state
   useEffect(() => {
-      stateRef.current = { activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns };
-  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns]);
+      stateRef.current = { 
+          activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, 
+          columns, durations, chordNames, connections, currentStepsPerBar,
+          handleSaveProject, handleTogglePlay, undo, redo, handleToggleConnection, 
+          handleCopyBar, handlePasteBar // Ensure these are captured!
+      };
+  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar]);
 
+  // 2. Single Listener that uses the Ref
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = stateRef.current; // Access latest state instantly
+        const current = stateRef.current;
         const target = e.target as HTMLElement;
-        const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        // --- DEBUGGING LOGS (Check Console F12 if shortcuts fail) ---
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
-            console.log(`⌨️ Shortcut detected: Ctrl+${e.key.toUpperCase()}`);
-            console.log(`   State: InputFocused=${isInputFocused}, CellSelected=${!!current.activeCell}`);
-        }
+        // --- FIXED LOGIC: Allow shortcuts if user is in Title Input, BUT NOT if they are in a generic Text Area ---
+        // We assume id="project-title" is the only input we want to allow Global Shortcuts (except Copy text)
+        const isTitleInput = target.id === 'project-title';
+        const isOtherInput = !isTitleInput && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
 
-        // Save: Ctrl+S (Always allow)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-            e.preventDefault();
-            handleSaveProject();
-            return;
-        }
+        if (isOtherInput) return; // Stop if typing in chord box or search
 
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); current.handleSaveProject(); return; }
         if (current.isReviewMode) return;
-
-        // Space: Play/Stop (Block if typing)
-        if (e.code === 'Space' && !isInputFocused) {
-             e.preventDefault(); 
-             handleTogglePlay();
-             return;
+        if (e.code === 'Space' && !isTitleInput) { e.preventDefault(); current.handleTogglePlay(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? current.redo() : current.undo(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); current.redo(); return; }
+        
+        // Copy: Allow browser copy if in Title Input, otherwise trigger App Copy
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') { 
+            if (isTitleInput) return; // Let browser copy title text
+            e.preventDefault(); 
+            console.log("📋 Copy Triggered");
+            current.handleCopyBar(); 
+            return; 
         }
 
-        // Undo: Ctrl+Z
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-            e.preventDefault();
-            if (e.shiftKey) redo();
-            else undo();
-            return;
-        }
-
-        // Redo: Ctrl+Y
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-            e.preventDefault();
-            redo();
-            return;
-        }
-
-        // Copy: Ctrl+C (Block if typing title/chords)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-            if (isInputFocused) return; // Let browser copy text
-            
-            e.preventDefault();
-            console.log("📋 Triggering Copy Bar...");
-            handleCopyBar();
-            return;
-        }
-
-        // Paste: Ctrl+V (Block if typing title/chords)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-            if (isInputFocused) return; // Let browser paste text
-            
-            e.preventDefault();
-            console.log("📋 Triggering Paste Bar...");
-            handlePasteBar();
-            return;
+        // Paste: Allow browser paste if in Title Input, otherwise trigger App Paste
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') { 
+            if (isTitleInput) return; // Let browser paste title text
+            e.preventDefault(); 
+            console.log("📋 Paste Triggered");
+            current.handlePasteBar(); 
+            return; 
         }
         
-        // Link: L
-        if (e.key.toLowerCase() === 'l' && !isInputFocused) {
-            e.preventDefault();
-            handleToggleConnection();
-            return;
-        }
+        if (e.code === 'KeyL' && !isTitleInput) { e.preventDefault(); current.handleToggleConnection(); return; }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty dependency array = Listener attaches ONCE and never detaches!
+  }, []); 
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
