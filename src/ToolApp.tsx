@@ -705,103 +705,100 @@ const handleGenerate = async () => {
   };
 
 
-   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-Based Fix)
+  // --------------------------------------------------------------------------
+  // Global Keyboard Shortcuts (Ref-based for stability)
   // --------------------------------------------------------------------------
   
-  // 1. Create a "Live Link" to your latest functions and state
-  const handlersRef = useRef({
-      handleCopyBar, 
-      handlePasteBar, 
-      handleSaveProject, 
-      handleTogglePlay, 
-      undo, 
-      redo, 
-      handleToggleConnection,
-      isReviewMode
+  // Keep a ref to the latest state so the event listener never sees "stale" data
+  const stateRef = useRef({
+      activeCell,
+      clipboard,
+      historyIndex,
+      history,
+      isReviewMode,
+      isPlaying,
+      columns // Needed for checks
   });
 
-  // 2. Update the link on every render so it's never stale
+  // Update ref whenever relevant state changes
   useEffect(() => {
-      handlersRef.current = { 
-          handleCopyBar, 
-          handlePasteBar, 
-          handleSaveProject, 
-          handleTogglePlay, 
-          undo, 
-          redo, 
-          handleToggleConnection,
-          isReviewMode
-      };
-  });
+      stateRef.current = { activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns };
+  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns]);
 
-  // 3. The Listener (Attached ONLY ONCE, uses the Live Link)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = handlersRef.current; // <--- Access fresh handlers here
+        const current = stateRef.current; // Access latest state instantly
         const target = e.target as HTMLElement;
         const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        // Save: Ctrl+S
+        // --- DEBUGGING LOGS (Check Console F12 if shortcuts fail) ---
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
+            console.log(`⌨️ Shortcut detected: Ctrl+${e.key.toUpperCase()}`);
+            console.log(`   State: InputFocused=${isInputFocused}, CellSelected=${!!current.activeCell}`);
+        }
+
+        // Save: Ctrl+S (Always allow)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
-            current.handleSaveProject();
+            handleSaveProject();
             return;
         }
 
         if (current.isReviewMode) return;
 
-        // Space: Play/Stop
+        // Space: Play/Stop (Block if typing)
         if (e.code === 'Space' && !isInputFocused) {
              e.preventDefault(); 
-             current.handleTogglePlay();
+             handleTogglePlay();
              return;
         }
 
         // Undo: Ctrl+Z
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
             e.preventDefault();
-            if (e.shiftKey) current.redo();
-            else current.undo();
+            if (e.shiftKey) redo();
+            else undo();
             return;
         }
 
         // Redo: Ctrl+Y
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
             e.preventDefault();
-            current.redo();
+            redo();
             return;
         }
 
-        // Copy: Ctrl+C
+        // Copy: Ctrl+C (Block if typing title/chords)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-            if (isInputFocused) return; 
+            if (isInputFocused) return; // Let browser copy text
+            
             e.preventDefault();
-            console.log("📋 Ctrl+C Detected"); // Debug Log
-            current.handleCopyBar();
+            console.log("📋 Triggering Copy Bar...");
+            handleCopyBar();
             return;
         }
 
-        // Paste: Ctrl+V
+        // Paste: Ctrl+V (Block if typing title/chords)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-            if (isInputFocused) return; 
+            if (isInputFocused) return; // Let browser paste text
+            
             e.preventDefault();
-            console.log("📋 Ctrl+V Detected"); // Debug Log
-            current.handlePasteBar();
+            console.log("📋 Triggering Paste Bar...");
+            handlePasteBar();
             return;
         }
         
         // Link: L
         if (e.key.toLowerCase() === 'l' && !isInputFocused) {
             e.preventDefault();
-            current.handleToggleConnection();
+            handleToggleConnection();
             return;
         }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty dependency array = Robust listener!
+  }, []); // Empty dependency array = Listener attaches ONCE and never detaches!
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
