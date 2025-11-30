@@ -706,10 +706,10 @@ const handleGenerate = async () => {
 
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-based for stability)
+  // Global Keyboard Shortcuts (Fixed for Copy/Paste)
   // --------------------------------------------------------------------------
   
-  // Keep a ref to the latest state so the event listener never sees "stale" data
+  // 1. Keep a ref to EVERYTHING needed for shortcuts
   const stateRef = useRef({
       activeCell,
       clipboard,
@@ -717,88 +717,163 @@ const handleGenerate = async () => {
       history,
       isReviewMode,
       isPlaying,
-      columns // Needed for checks
+      columns,
+      durations,
+      chordNames,
+      connections,
+      currentStepsPerBar,
+      // We also need the setters to trigger updates from inside the listener
+      setClipboard, 
+      setToastMessage,
+      handleSaveProject,
+      handleTogglePlay,
+      undo,
+      redo,
+      handleToggleConnection,
+      updateStateWithHistory
   });
 
-  // Update ref whenever relevant state changes
+  // 2. Update the ref on every render so it's always fresh
   useEffect(() => {
-      stateRef.current = { activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns };
-  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns]);
+      stateRef.current = { 
+          activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, 
+          columns, durations, chordNames, connections, currentStepsPerBar,
+          setClipboard, setToastMessage, handleSaveProject, handleTogglePlay, 
+          undo, redo, handleToggleConnection, updateStateWithHistory 
+      };
+  });
 
+  // 3. The Permanent Listener (Attached Once)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = stateRef.current; // Access latest state instantly
+        const current = stateRef.current; // <--- GET FRESH STATE
         const target = e.target as HTMLElement;
         const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        // --- DEBUGGING LOGS (Check Console F12 if shortcuts fail) ---
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
-            console.log(`⌨️ Shortcut detected: Ctrl+${e.key.toUpperCase()}`);
-            console.log(`   State: InputFocused=${isInputFocused}, CellSelected=${!!current.activeCell}`);
-        }
+        // --- SHORTCUTS ---
 
-        // Save: Ctrl+S (Always allow)
+        // Save: Ctrl+S
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
-            handleSaveProject();
+            current.handleSaveProject();
             return;
         }
 
         if (current.isReviewMode) return;
 
-        // Space: Play/Stop (Block if typing)
+        // Play/Stop: Space
         if (e.code === 'Space' && !isInputFocused) {
              e.preventDefault(); 
-             handleTogglePlay();
+             current.handleTogglePlay();
              return;
         }
 
         // Undo: Ctrl+Z
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
             e.preventDefault();
-            if (e.shiftKey) redo();
-            else undo();
+            if (e.shiftKey) current.redo();
+            else current.undo();
             return;
         }
 
         // Redo: Ctrl+Y
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
             e.preventDefault();
-            redo();
+            current.redo();
             return;
         }
 
-        // Copy: Ctrl+C (Block if typing title/chords)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-            if (isInputFocused) return; // Let browser copy text
-            
-            e.preventDefault();
-            console.log("📋 Triggering Copy Bar...");
-            handleCopyBar();
-            return;
-        }
-
-        // Paste: Ctrl+V (Block if typing title/chords)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-            if (isInputFocused) return; // Let browser paste text
-            
-            e.preventDefault();
-            console.log("📋 Triggering Paste Bar...");
-            handlePasteBar();
-            return;
-        }
-        
         // Link: L
         if (e.key.toLowerCase() === 'l' && !isInputFocused) {
             e.preventDefault();
-            handleToggleConnection();
+            current.handleToggleConnection();
+            return;
+        }
+
+        // --- COPY LOGIC (Inline) ---
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !isInputFocused) {
+            e.preventDefault();
+            
+            if (!current.activeCell) {
+                current.setToastMessage("Select a cell to copy bar");
+                return;
+            }
+
+            // Logic: Identify the full bar belonging to the selected cell
+            const barIndex = Math.floor(current.activeCell.col / current.currentStepsPerBar);
+            const startIdx = barIndex * current.currentStepsPerBar;
+            const endIdx = startIdx + current.currentStepsPerBar;
+
+            // Slice the data
+            const relativeConnections = current.connections
+                .filter(c => c.col >= startIdx && c.col < endIdx)
+                .map(c => ({ col: c.col - startIdx, str: c.str }));
+
+            const copiedData: HistoryState = {
+                columns: JSON.parse(JSON.stringify(current.columns.slice(startIdx, endIdx))),
+                durations: [...current.durations.slice(startIdx, endIdx)],
+                chordNames: [...current.chordNames.slice(startIdx, endIdx)],
+                connections: relativeConnections 
+            };
+            
+            current.setClipboard(copiedData);
+            current.setToastMessage("Bar Copied! 📋");
+            return;
+        }
+
+        // --- PASTE LOGIC (Inline) ---
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !isInputFocused) {
+            e.preventDefault();
+
+            if (!current.activeCell) {
+                current.setToastMessage("Select destination cell");
+                return;
+            }
+            if (!current.clipboard) {
+                current.setToastMessage("Clipboard empty");
+                return;
+            }
+
+            // Logic: Overwrite the bar where the cursor is
+            const barIndex = Math.floor(current.activeCell.col / current.currentStepsPerBar);
+            const startIdx = barIndex * current.currentStepsPerBar;
+            
+            const clipLen = current.clipboard.columns.length;
+            
+            const newColumns = [...current.columns];
+            const newDurations = [...current.durations];
+            const newChords = [...current.chordNames];
+
+            // Remove old connections in the target area
+            let newConnections = current.connections.filter(c => !(c.col >= startIdx && c.col < startIdx + clipLen));
+
+            // Paste Data
+            for (let i = 0; i < clipLen; i++) {
+                const targetIdx = startIdx + i;
+                if (targetIdx < newColumns.length) {
+                    newColumns[targetIdx] = current.clipboard.columns[i];
+                    newDurations[targetIdx] = current.clipboard.durations[i];
+                    newChords[targetIdx] = current.clipboard.chordNames[i];
+                }
+            }
+            
+            // Paste Connections
+            current.clipboard.connections.forEach(c => {
+                const targetCol = startIdx + c.col;
+                if (targetCol < newColumns.length) {
+                    newConnections.push({ col: targetCol, str: c.str });
+                }
+            });
+
+            current.updateStateWithHistory(newColumns, newDurations, newChords, newConnections);
+            current.setToastMessage("Bar Pasted! 📋");
             return;
         }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty dependency array = Listener attaches ONCE and never detaches!
+  }, []);
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
