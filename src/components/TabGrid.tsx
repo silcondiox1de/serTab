@@ -10,17 +10,17 @@ interface DurationMarkerProps {
   beam16: { left: boolean; right: boolean };
 }
 
-const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, span, beam8, beam16 }) => {
+const DurationMarker: React.FC<DurationMarkerProps> = ({
+  duration,
+  onClick,
+  span,
+  beam8,
+  beam16,
+}) => {
   const isBeamed = beam8.left || beam8.right;
   const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
-  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
-
-  // Calculate the center position of the note head relative to the container
-  const singleStepWidth = 100 / span;
-  const centerPercent = singleStepWidth / 2;
-  const isBeamed = beam8.left || beam8.right;
-  const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
-  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
+  const strokeClass =
+    "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
 
   // Calculate the center position of the note head relative to the container
   const singleStepWidth = 100 / span;
@@ -28,107 +28,205 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, span
 
   // Render SVG Symbol (Head, Stem, Flags)
   const renderSymbol = () => {
-      const strokeWidth = 1.5;
-      const height = 32;
-      const cx = 10; // Center of 20px wide SVG
+    const strokeWidth = 1.5;
+    const height = 32;
+    const cx = 10; // Center of 20px wide SVG
 
-      switch (duration) {
-          case '1': // Whole Note
-              return <circle cx={cx} cy={height/2} r="5" strokeWidth={strokeWidth} fill="none" className={strokeClass} />;
-          case '2': // Half Note
-               return (
-                  <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height - 8} />
-                    <circle cx={cx} cy={height - 5} r="4" />
-                  </g>
-               );
-          case '4': // Quarter Note
-              return <line x1={cx} y1={5} x2={cx} y2={height} strokeWidth={strokeWidth} className={strokeClass} />;
-          case '8': // 8th Note
-              if (isBeamed) {
-                  return <line x1={cx} y1={5} x2={cx} y2={32} strokeWidth={strokeWidth} className={strokeClass} />;
-              }
-              return (
-                  <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height} />
-                    <path d={`M ${cx} ${height} Q ${cx+10} ${height-5} ${cx+10} ${height-15}`} />
-                  </g>
-              );
-          case '16': // 16th Note
-              if (isBeamed) {
-                  return <line x1={cx} y1={5} x2={cx} y2={32} strokeWidth={strokeWidth} className={strokeClass} />;
-              }
-              return (
-                   <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
-                    <line x1={cx} y1={5} x2={cx} y2={height} />
-                    <path d={`M ${cx} ${height} Q ${cx+10} ${height-5} ${cx+10} ${height-15}`} />
-                    <path d={`M ${cx} ${height-8} Q ${cx+10} ${height-13} ${cx+10} ${height-23}`} />
-                  </g>
-              );
-          default: 
-              return <line x1={cx} y1={5} x2={cx} y2={height} strokeWidth={strokeWidth} className={strokeClass} />;
-      }
+    switch (duration) {
+      case "1": // Whole Note
+        return (
+          <circle
+            cx={cx}
+            cy={height / 2}
+            r="5"
+            strokeWidth={strokeWidth}
+            fill="none"
+            className={strokeClass}
+          />
+        );
+      case "2": // Half Note
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height - 8} />
+            <circle cx={cx} cy={height - 5} r="4" />
+          </g>
+        );
+      case "4": // Quarter Note
+        return (
+          <line
+            x1={cx}
+            y1={5}
+            x2={cx}
+            y2={height}
+            strokeWidth={strokeWidth}
+            className={strokeClass}
+          />
+        );
+      case "8": // 8th Note
+        if (isBeamed) {
+          return (
+            <line
+              x1={cx}
+              y1={5}
+              x2={cx}
+              y2={32}
+              strokeWidth={strokeWidth}
+              className={strokeClass}
+            />
+          );
+        }
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height} />
+            <path
+              d={`M ${cx} ${height} Q ${cx + 10} ${height - 5} ${
+                cx + 10
+              } ${height - 15}`}
+            />
+          </g>
+        );
+      case "16": // 16th Note
+        if (isBeamed) {
+          return (
+            <line
+              x1={cx}
+              y1={5}
+              x2={cx}
+              y2={32}
+              strokeWidth={strokeWidth}
+              className={strokeClass}
+            />
+          );
+        }
+        return (
+          <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
+            <line x1={cx} y1={5} x2={cx} y2={height} />
+            <path
+              d={`M ${cx} ${height} Q ${cx + 10} ${height - 5} ${
+                cx + 10
+              } ${height - 15}`}
+            />
+            <path
+              d={`M ${cx} ${height - 8} Q ${cx + 10} ${height - 13} ${
+                cx + 10
+              } ${height - 23}`}
+            />
+          </g>
+        );
+      default:
+        return (
+          <line
+            x1={cx}
+            y1={5}
+            x2={cx}
+            y2={height}
+            strokeWidth={strokeWidth}
+            className={strokeClass}
+          />
+        );
+    }
   };
 
   return (
-      <div 
-        onClick={onClick}
-        className="h-full relative cursor-pointer group hover:bg-white/5"
-        // use flex-weight instead of percentage width
-        style={{ flex: span, minWidth: 0 }}
-        title={`Duration: 1/${duration}`}
-      >
-         {/* Beams Layer */}
-         {isBeamed && (
-            <div className="absolute inset-0 pointer-events-none">
-                {/* 8th Beam (Bottom) */}
-                <div className="absolute bottom-0 w-full h-[2px]">
-                    {/* From Left Edge to Center */}
-                    {beam8.left && (
-                        <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>
-                    )}
-                    {/* From Center to Right Edge */}
-                    {beam8.right && (
-                        <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>
-                    )}
-                </div>
-                
-                {/* 16th Beam (Above 8th) */}
-                {duration === '16' && (
-                    <div className="absolute bottom-[4px] w-full h-[2px]">
-                         {beam16.left ? (
-                             <div className={`absolute h-full ${beamClass}`} style={{ left: '-0.5px', width: `calc(${centerPercent}% + 1.5px)` }}></div>
-                         ) : (
-                             // Stub Left (only if connected to left 8th)
-                             beam8.left && <div className={`absolute h-full ${beamClass}`} style={{ right: `calc(${100 - centerPercent}% - 1px)`, width: '8px' }}></div>
-                         )}
+    <div
+      onClick={onClick}
+      className="h-full relative cursor-pointer group hover:bg-white/5"
+      // use flex-weight instead of percentage width so it matches the grids above
+      style={{ flex: span, minWidth: 0 }}
+      title={`Duration: 1/${duration}`}
+    >
+      {/* Beams Layer */}
+      {isBeamed && (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* 8th Beam (Bottom) */}
+          <div className="absolute bottom-0 w-full h-[2px]">
+            {/* From Left Edge to Center */}
+            {beam8.left && (
+              <div
+                className={`absolute h-full ${beamClass}`}
+                style={{
+                  left: "-0.5px",
+                  width: `calc(${centerPercent}% + 1.5px)`,
+                }}
+              ></div>
+            )}
+            {/* From Center to Right Edge */}
+            {beam8.right && (
+              <div
+                className={`absolute h-full ${beamClass}`}
+                style={{
+                  left: `calc(${centerPercent}% - 1px)`,
+                  right: "-0.5px",
+                }}
+              ></div>
+            )}
+          </div>
 
-                         {beam16.right ? (
-                             <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, right: '-0.5px' }}></div>
-                         ) : (
-                             // Stub Right (only if connected to right 8th)
-                             beam8.right && <div className={`absolute h-full ${beamClass}`} style={{ left: `calc(${centerPercent}% - 1px)`, width: '8px' }}></div>
-                         )}
-                    </div>
-                )}
+          {/* 16th Beam (Above 8th) */}
+          {duration === "16" && (
+            <div className="absolute bottom-[4px] w-full h-[2px]">
+              {beam16.left ? (
+                <div
+                  className={`absolute h-full ${beamClass}`}
+                  style={{
+                    left: "-0.5px",
+                    width: `calc(${centerPercent}% + 1.5px)`,
+                  }}
+                ></div>
+              ) : (
+                // Stub Left (only if connected to left 8th)
+                beam8.left && (
+                  <div
+                    className={`absolute h-full ${beamClass}`}
+                    style={{
+                      right: `calc(${100 - centerPercent}% - 1px)`,
+                      width: "8px",
+                    }}
+                  ></div>
+                )
+              )}
+
+              {beam16.right ? (
+                <div
+                  className={`absolute h-full ${beamClass}`}
+                  style={{
+                    left: `calc(${centerPercent}% - 1px)`,
+                    right: "-0.5px",
+                  }}
+                ></div>
+              ) : (
+                // Stub Right (only if connected to right 8th)
+                beam8.right && (
+                  <div
+                    className={`absolute h-full ${beamClass}`}
+                    style={{
+                      left: `calc(${centerPercent}% - 1px)`,
+                      width: "8px",
+                    }}
+                  ></div>
+                )
+              )}
             </div>
-         )}
+          )}
+        </div>
+      )}
 
-         {/* Symbol Container - Centered in the first step */}
-         <div 
-            className="absolute top-0 bottom-0 flex items-center justify-center pointer-events-none"
-            style={{ left: 0, width: `${singleStepWidth}%` }}
-         >
-             <svg width="20" height="32" viewBox="0 0 20 32" className="overflow-visible">
-                 {renderSymbol()}
-             </svg>
-         </div>
-         
-         {/* Right Border separator */}
-         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none"></div>
+      {/* Symbol Container - Centered in the first step */}
+      <div
+        className="absolute top-0 bottom-0 flex items-center justify-center pointer-events-none"
+        style={{ left: 0, width: `${singleStepWidth}%` }}
+      >
+        <svg width="20" height="32" viewBox="0 0 20 32" className="overflow-visible">
+          {renderSymbol()}
+        </svg>
       </div>
-  )
+
+      {/* Right Border separator */}
+      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none"></div>
+    </div>
+  );
 };
+
 
 interface TabGridProps {
   columns: TabColumn[];
@@ -664,35 +762,38 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                  }}>
                                             </div>
 
-                                            {markersWithBeams.map((marker) => {
-                                                const globalColIdx = marker.globalIdx;
-                                                const isPlayingThisCell = ...
-                                            
-                                                return (
-                                                    <div
-                                                      key={globalColIdx}
-                                                      className="relative border-r border-gray-800 last:border-0"
-                                                      style={{ flex: marker.span, minWidth: 0 }}
-                                                    >
-
-                                                         {strIdx === 0 && isPlayingThisCell && (
-                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
-                                                        )}
-                                                        {isPlayingThisCell && (
-                                                            <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-cyan-500/50 z-30 pointer-events-none"></div>
-                                                        )}
-                                                        <TabCell
-                                                            note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
-                                                            stringIndex={strIdx}
-                                                            columnIndex={globalColIdx}
-                                                            isActive={activeCell?.col === globalColIdx && activeCell?.str === strIdx}
-                                                            onFocus={() => onActiveCellChange({ col: globalColIdx, str: strIdx })}
-                                                            onUpdate={(val) => handleUpdateNote(globalColIdx, strIdx, val)}
-                                                            onNavigate={(dir) => handleNavigate(globalColIdx, strIdx, dir)}
-                                                        />
-                                                    </div>
-                                                );
-                                            })}
+                              {markersWithBeams.map((marker) => {
+                                const globalColIdx = marker.globalIdx;
+                                const isPlayingThisCell =
+                                  currentColumnIndex >= marker.globalIdx &&
+                                  currentColumnIndex < marker.globalIdx + marker.span;
+                              
+                                return (
+                                  <div
+                                    key={globalColIdx}
+                                    className="relative border-r border-gray-800 last:border-0"
+                                    style={{ flex: marker.span, minWidth: 0 }}
+                                  >
+                                    {strIdx === 0 && isPlayingThisCell && (
+                                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
+                                    )}
+                                    {isPlayingThisCell && (
+                                      <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-cyan-500/50 z-30 pointer-events-none"></div>
+                                    )}
+                                    <TabCell
+                                      note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
+                                      stringIndex={strIdx}
+                                      columnIndex={globalColIdx}
+                                      isActive={
+                                        activeCell?.col === globalColIdx && activeCell?.str === strIdx
+                                      }
+                                      onFocus={() => onActiveCellChange({ col: globalColIdx, str: strIdx })}
+                                      onUpdate={(val) => handleUpdateNote(globalColIdx, strIdx, val)}
+                                      onNavigate={(dir) => handleNavigate(globalColIdx, strIdx, dir)}
+                                    />
+                                  </div>
+                                );
+                              })}
                                         </div>
                                     )})}
                                 </div>
