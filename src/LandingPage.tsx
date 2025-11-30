@@ -20,11 +20,11 @@ export default function LandingPage() {
 
         {/* SECTION B: SMALLER + COURIER FONT */}
         <div style={styles.sectionB}>
-          <h3 style={styles.toolsHeader}>Tools by Serum</h3>
+          <h3 style={styles.toolsHeader}>Tools by Serum Lab</h3>
           
           <div style={styles.toolRow}>
             <Link to="/tool/tab" style={styles.link}>
-              SerTab
+              Serum Tab
             </Link>
 
             <span style={styles.pipe}>|</span>
@@ -59,8 +59,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexDirection: 'column',
     minHeight: '100vh',
-    backgroundColor: '#ffffff',
-    color: '#000000',
+    backgroundColor: '#000000',
+    color: '#0DFF17',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   content: {
