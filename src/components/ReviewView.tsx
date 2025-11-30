@@ -671,7 +671,22 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-        }
+            /* footer repeated on every printed page */
+            .print-footer {
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              padding: 8px 0;
+              border-top: 1px solid #e5e7eb; /* light gray */
+              background: white;
+              text-align: center;
+              font-family: "Courier New", Courier, monospace;
+              font-size: 10px;
+              font-weight: 700;
+              color: #9ca3af; /* gray-400 */
+            }
+          }
       `}</style>
 
       {/* Top nav (screen only) */}
@@ -737,11 +752,17 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           )}
         </div>
 
-        <div className="mt-20 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 font-['Courier'] font-bold">
+        <div className="mt-20 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 font-['Courier'] font-bold print:hidden">
           Generated with SerTab • Tool belongs to Serum AI. All rights reserved.
           No commercial use.
         </div>
+
       </div>
+            {/* Print-only repeating footer */}
+      <div className="hidden print:block print-footer">
+        Generated with SerTab • Tool belongs to Serum AI. All rights reserved. No commercial use.
+      </div>
+
     </div>
   );
 };
