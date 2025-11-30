@@ -48,7 +48,7 @@ const ReviewDurationMarker = ({
   beam16: { left: boolean; right: boolean };
 }) => {
   const stroke = 'black';
-  const strokeWidth = 1; 
+  const strokeWidth = 1; // slightly lighter
   const height = 20;
   const cx = 10;
 
@@ -205,6 +205,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const totalBars = Math.ceil(columns.length / stepsPerBar);
   const totalSystems = Math.ceil(totalBars / BARS_PER_SYSTEM);
 
+  // Last column in the whole piece that has any note
   let lastUsedColumn = -1;
   for (let i = columns.length - 1; i >= 0; i--) {
     if (columns[i].some((n) => n !== -1)) {
@@ -213,6 +214,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     }
   }
 
+  // Chains for slides / connections
   const chains: { col: number; endCol: number; str: number }[] = [];
   {
     const used = new Set<string>();
@@ -313,19 +315,13 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
         {/* Staff + bars */}
         <div className="relative">
-          {/* Tuning on the left */}
-          <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between py-1 text-[10px] text-gray-500 font-mono">
-            {tuning.map((t, i) => (
-              <span key={i} className="leading-none">
-                {t}
-              </span>
-            ))}
-          </div>
+          {/* NOTE: tuning block removed here */}
 
           <div className="border-l-2 border-black flex w-full">
             {systemBars.map((bar, bIdx) => {
               const startColIndex = bar.barIndex * stepsPerBar;
 
+              // Chains in this bar
               const barChains = chains.filter(
                 (c) =>
                   c.col >= startColIndex &&
@@ -368,6 +364,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 );
               });
 
+              // Duration markers for this bar – ONLY where there is at least one note
               const markers: {
                 colIdx: number;
                 duration: NoteDuration;
@@ -378,12 +375,14 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               while (i < stepsPerBar) {
                 const globalIdx = startColIndex + i;
                 if (lastUsedColumn !== -1 && globalIdx > lastUsedColumn) {
+                  // beyond last note in piece -> no more markers
                   break;
                 }
 
                 const d = bar.durs[i] || '8';
                 const span = getDurationSteps(d);
 
+                // check if any column in [i, i + span) has at least one note
                 const hasNoteInSpan = bar.cols
                   .slice(i, i + span)
                   .some(
@@ -450,9 +449,18 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 >
                   {/* STAFF AREA */}
                   <div className="relative flex-1">
-                    
-                    {/* REMOVED: The block that drew horizontal string lines was here */}
-                    
+                    {/* string lines */}
+                    <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
+                      {Array.from({
+                        length: instrument.stringCount,
+                      }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-full border-t border-gray-300 print:border-gray-500"
+                        ></div>
+                      ))}
+                    </div>
+
                     {/* connections */}
                     <div className="absolute inset-0 pointer-events-none overflow-visible z-10">
                       <svg
