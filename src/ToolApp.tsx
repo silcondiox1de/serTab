@@ -24,7 +24,6 @@ const BASE_C0 = 16.3516;
 const getFrequencyFromStr = (noteStr: string, referenceFreq: number): number => {
     const clean = noteStr.trim().toLowerCase();
     
-    // explicit octave check (e.g. c2, a#4)
     const match = clean.match(/^([a-g][#b]?)([0-8])$/);
     if (match) {
         const notePart = match[1];
@@ -36,7 +35,6 @@ const getFrequencyFromStr = (noteStr: string, referenceFreq: number): number => 
         }
     }
 
-    // No explicit octave, find closest to reference frequency (default tuning)
     const noteOnly = clean.replace(/[0-9]/g, '');
     const nIdx = NOTE_OFFSETS[noteOnly];
     if (nIdx === undefined) return referenceFreq;
@@ -44,7 +42,6 @@ const getFrequencyFromStr = (noteStr: string, referenceFreq: number): number => 
     let closestFreq = referenceFreq;
     let minDiff = Infinity;
 
-    // Search reasonable range of octaves (0-8)
     for (let oct = 0; oct <= 8; oct++) {
         const semitones = oct * 12 + nIdx;
         const candidate = BASE_C0 * Math.pow(2, semitones / 12);
@@ -92,55 +89,43 @@ const App: React.FC = () => {
   const [currentColIndex, setCurrentColIndex] = useState<number>(-1);
   const [songTitle, setSongTitle] = useState("Untitled Project");
   
-  // Custom Tuning State
   const [customTuning, setCustomTuning] = useState<string[]>(INSTRUMENTS['guitar'].strings);
 
-  // View State
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
   const [editRowStartBarIndex, setEditRowStartBarIndex] = useState<number>(0);
   const [isChordLibraryOpen, setIsChordLibraryOpen] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
   
-  // Autosave UI State
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'modified'>('saved');
   const [hasDraft, setHasDraft] = useState(false);
   
-  // Grid Key to force remount on clear
   const [gridKey, setGridKey] = useState<number>(0);
 
-  // Selection state
   const [activeCell, setActiveCell] = useState<{ col: number; str: number } | null>(null);
   const selectedColIndex = activeCell ? activeCell.col : -1;
 
-  // Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
-  // Import/Export Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Default to 4 bars of 4/4 (64 steps)
   const initialTsConfig = TIME_SIGNATURES['4/4'];
   const initialSteps = initialTsConfig.stepsPerBar * 4;
   const [columns, setColumns] = useState<TabColumn[]>(createEmptyColumns(initialSteps, INSTRUMENTS['guitar'].stringCount));
   const [durations, setDurations] = useState<NoteDuration[]>(createDefaultDurations(initialSteps));
   const [chordNames, setChordNames] = useState<(string | null)[]>(Array(initialSteps).fill(null));
   
-  // Note Connections (Slurs)
   const [connections, setConnections] = useState<{ col: number; str: number }[]>([]);
 
-  // History & Clipboard
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [clipboard, setClipboard] = useState<HistoryState | null>(null);
 
-  // AI State
   const [isGenerating, setIsGenerating] = useState(false);
 
   const currentInstrument = INSTRUMENTS[instrumentType];
   const currentStepsPerBar = TIME_SIGNATURES[timeSignature].stepsPerBar;
   const currentTempoBeat = TIME_SIGNATURES[timeSignature].tempoBeat;
 
-  // Initialize history once on mount
   useEffect(() => {
      const initialState = {
          columns: createEmptyColumns(initialSteps, INSTRUMENTS['guitar'].stringCount),
@@ -152,18 +137,14 @@ const App: React.FC = () => {
      setHistoryIndex(0);
   }, []);
 
-  // Helper to determine default note duration based on Time Signature
   const getDefaultDuration = useCallback((ts: TimeSignatureType): NoteDuration => {
       const parts = ts.split('/');
       if (parts.length < 2) return '8';
       const denominator = parseInt(parts[1], 10);
       const val = (denominator * 2).toString();
-      
-      const validDurations = ['1', '2', '4', '8', '16'];
-      return validDurations.includes(val) ? (val as NoteDuration) : '8';
+      return ['1', '2', '4', '8', '16'].includes(val) ? (val as NoteDuration) : '8';
   }, []);
 
-  // Calculate realtime frequencies from customTuning
   const activeFrequencies = useMemo(() => {
       return customTuning.map((t, i) => {
          const def = currentInstrument.frequencies[i] || 440;
@@ -171,7 +152,6 @@ const App: React.FC = () => {
       });
   }, [customTuning, currentInstrument]);
 
-  // Sync Audio Engine state
   useEffect(() => {
     let engineBpm = bpm;
     if (currentTempoBeat === 'dotted-quarter') {
@@ -179,10 +159,6 @@ const App: React.FC = () => {
     }
     audioEngine.setScore(columns, durations, engineBpm, activeFrequencies, instrumentType);
   }, [columns, durations, bpm, activeFrequencies, instrumentType, currentTempoBeat]);
-
-// --------------------------------------------------------------------------
-// AI Handlers
-// --------------------------------------------------------------------------
 
 const handleOptimize = () => {
     if (window.confirm("Optimize fingering for the entire tab? This uses AI logic to minimize hand movement.")) {
@@ -193,9 +169,6 @@ const handleOptimize = () => {
 };
 
 const handleGenerate = async () => {
-    console.log("🖱️ Button Clicked! Checking tab..."); 
-    
-    // Check if tab is empty
     const isTabEmpty = columns.every(col => col.every(n => n === -1));
     if (isTabEmpty) {
         setToastMessage("Write some notes first!");
@@ -206,9 +179,6 @@ const handleGenerate = async () => {
     setToastMessage("AI is listening...");
 
     try {
-        console.log("🚀 Calling Composer Service...");
-        
-        // Find where the music actually ends so we can append there
         let lastNoteIndex = -1;
         for (let i = columns.length - 1; i >= 0; i--) {
             if (columns[i].some(n => n !== -1)) {
@@ -217,36 +187,17 @@ const handleGenerate = async () => {
             }
         }
         
-        // If the grid is full of silence, start at 0. Otherwise start after last note.
         const insertIndex = lastNoteIndex + 1;
-
-        // Generate 2 bars (32 steps)
         const newRiff = await generateRiff(columns, bpm, instrumentType, 32);
         
-        console.log("✅ Riff received, length:", newRiff.length);
-        
         if (newRiff.length > 0) {
-            // Create a new grid that fits the new riff perfectly
-            // 1. Keep everything up to the insertion point
             const columnsBefore = columns.slice(0, insertIndex);
-            
-            // 2. The new riff
-            
-            // 3. Keep the rest of the old grid (if you want to overwrite empty space)
-            // OR just append. Let's just insert it to be safe.
             const columnsAfter = columns.slice(insertIndex);
             
-            // Actually, simpler logic for now: Append to the END of the active music.
-            // But we need to maintain bar structure (multiples of 16 usually).
-            // Let's keep it simple: Append to the very end of the arrays to avoid breaking bar lines for now.
-            // UNLESS you want it to sound immediate.
-            
-            // BETTER STRATEGY: Overwrite the empty space if it exists!
             const newColumns = [...columns];
             const newDurations = [...durations];
             const newChords = [...chordNames];
             
-            // If we don't have enough space in the current grid, extend it
             if (insertIndex + newRiff.length > newColumns.length) {
                 const extraNeeded = (insertIndex + newRiff.length) - newColumns.length;
                 const extraCols = createEmptyColumns(extraNeeded, INSTRUMENTS[instrumentType].stringCount);
@@ -255,39 +206,30 @@ const handleGenerate = async () => {
                 newChords.push(...Array(extraNeeded).fill(null));
             }
 
-            // Write the riff
             newRiff.forEach((col, i) => {
                 newColumns[insertIndex + i] = col;
             });
 
             updateStateWithHistory(newColumns, newDurations, newChords, connections);
             setToastMessage("Riff Generated! 🔮");
-            
-            // Scroll to where we added it
             setCurrentColIndex(insertIndex); 
         } else {
             setToastMessage("Could not generate riff.");
         }
 
     } catch (error) {
-        console.error("❌ Generation Error:", error);
         setToastMessage("AI Error. Check Console.");
     } finally {
         setIsGenerating(false);
     }
 };
   
-  // --------------------------------------------------------------------------
-  // History Management
-  // --------------------------------------------------------------------------
-
   const updateStateWithHistory = (
       newColumns: TabColumn[], 
       newDurations: NoteDuration[], 
       newChordNames: (string | null)[],
       newConnections: { col: number; str: number }[]
   ) => {
-      // Create new history entry
       const newState: HistoryState = {
           columns: newColumns,
           durations: newDurations,
@@ -298,13 +240,11 @@ const handleGenerate = async () => {
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push(newState);
       
-      // Limit history size to 50
       if (newHistory.length > 50) newHistory.shift();
 
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
 
-      // Update actual state
       setColumns(newColumns);
       setDurations(newDurations);
       setChordNames(newChordNames);
@@ -337,10 +277,6 @@ const handleGenerate = async () => {
       }
   };
 
-  // --------------------------------------------------------------------------
-  // Editing Actions
-  // --------------------------------------------------------------------------
-
   const handleUpdateColumn = (index: number, newCol: TabColumn) => {
     const newColumns = [...columns];
     newColumns[index] = newCol;
@@ -363,20 +299,16 @@ const handleGenerate = async () => {
     if (!activeCell) return;
     const { col, str } = activeCell;
     
-    // Check if we are deleting or adding
     const exists = connections.some(c => c.col === col && c.str === str);
     
     if (exists) {
-        // Remove existing
         const newConnections = connections.filter(c => !(c.col === col && c.str === str));
         setToastMessage("Removed Link");
         updateStateWithHistory(columns, durations, chordNames, newConnections);
     } else {
-        // Validation for adding
         const currentNote = columns[col][str];
-        if (currentNote === -1) return; // No note to link from
+        if (currentNote === -1) return; 
 
-        // Check for next note on the same string
         let hasNeighbor = false;
         for (let i = col + 1; i < columns.length; i++) {
              if (columns[i][str] !== -1) {
@@ -396,7 +328,6 @@ const handleGenerate = async () => {
   const handleRemoveConnectionChain = (startCol: number, endCol: number, str: number) => {
     const newConnections = connections.filter(c => {
         if (c.str !== str) return true;
-        // Remove all connections that lie within the chain's span
         if (c.col >= startCol && c.col < endCol) return false;
         return true;
     });
@@ -444,7 +375,6 @@ const handleGenerate = async () => {
            const emptyDurs = createDefaultDurations(initialCount, defDur);
            const emptyChords = Array(initialCount).fill(null);
            
-           // We do reset history here as it's a hard reset
            const newState = { columns: emptyCols, durations: emptyDurs, chordNames: emptyChords, connections: [] };
            setHistory([newState]);
            setHistoryIndex(0);
@@ -471,28 +401,18 @@ const handleGenerate = async () => {
               newColumns[i] = Array(currentInstrument.stringCount).fill(-1);
           }
       }
-      // Also remove connections in this bar for cleanliness
       const newConnections = connections.filter(c => !(c.col >= startIdx && c.col < endIdx));
       
       updateStateWithHistory(newColumns, durations, chordNames, newConnections);
       setToastMessage("Bar Cleared");
   };
 
-  // --------------------------------------------------------------------------
-  // Copy / Paste Logic
-  // --------------------------------------------------------------------------
-
   const handleCopyBar = () => {
-      if (!activeCell) {
-          setToastMessage("Select a cell to copy its bar");
-          return;
-      }
+      if (!activeCell) { setToastMessage("Select a cell to copy its bar"); return; }
       const barIndex = Math.floor(activeCell.col / currentStepsPerBar);
       const startIdx = barIndex * currentStepsPerBar;
       const endIdx = startIdx + currentStepsPerBar;
 
-      // Slice data
-      // Filter connections relevant to this bar and normalize them (relative to startIdx)
       const relativeConnections = connections
           .filter(c => c.col >= startIdx && c.col < endIdx)
           .map(c => ({ col: c.col - startIdx, str: c.str }));
@@ -509,27 +429,18 @@ const handleGenerate = async () => {
   };
 
   const handlePasteBar = () => {
-      if (!activeCell) {
-          setToastMessage("Select a destination cell");
-          return;
-      }
-      if (!clipboard) {
-          setToastMessage("Clipboard empty");
-          return;
-      }
+      if (!activeCell) { setToastMessage("Select a destination cell"); return; }
+      if (!clipboard) { setToastMessage("Clipboard empty"); return; }
 
       const barIndex = Math.floor(activeCell.col / currentStepsPerBar);
       const startIdx = barIndex * currentStepsPerBar;
       
-      // We overwrite starting from startIdx, limited by clipboard length or total columns
       const clipLen = clipboard.columns.length;
       
-      // Prepare new arrays
       const newColumns = [...columns];
       const newDurations = [...durations];
       const newChords = [...chordNames];
 
-      // Remove existing connections in target area
       let newConnections = connections.filter(c => !(c.col >= startIdx && c.col < startIdx + clipLen));
 
       for (let i = 0; i < clipLen; i++) {
@@ -541,7 +452,6 @@ const handleGenerate = async () => {
           }
       }
       
-      // Add pasted connections
       clipboard.connections.forEach(c => {
           const targetCol = startIdx + c.col;
           if (targetCol < newColumns.length) {
@@ -552,10 +462,6 @@ const handleGenerate = async () => {
       updateStateWithHistory(newColumns, newDurations, newChords, newConnections);
       setToastMessage("Bar Pasted");
   };
-
-  // --------------------------------------------------------------------------
-  // Project State Helpers (Load/Save/AutoSave)
-  // --------------------------------------------------------------------------
 
   const getProjectState = (): SavedProject => {
     return {
@@ -607,7 +513,6 @@ const handleGenerate = async () => {
             const content = e.target?.result as string;
             const project = JSON.parse(content);
             
-            // Basic structural validation
             if (project && Array.isArray(project.columns) && Array.isArray(project.durations)) {
                 if (window.confirm("Importing a project will overwrite the current session. Continue?")) {
                     loadProjectState(project);
@@ -621,7 +526,6 @@ const handleGenerate = async () => {
             alert("Failed to read project file. Please ensure it is a valid JSON file exported from SerTab.");
         }
         
-        // Reset file input to allow re-importing same file if needed
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -653,7 +557,6 @@ const handleGenerate = async () => {
     const defaultStrings = INSTRUMENTS[project.instrumentType].strings;
     setCustomTuning(project.tuning && project.tuning.length === defaultStrings.length ? project.tuning : defaultStrings);
     
-    // Reset History
     const newState = { columns: project.columns, durations: project.durations, chordNames: project.chordNames || [], connections: project.connections || [] };
     setHistory([newState]);
     setHistoryIndex(0);
@@ -661,7 +564,6 @@ const handleGenerate = async () => {
     setGridKey(prev => prev + 1); 
   };
 
-  // Auto-Save Effect
   useEffect(() => {
       if (saveStatus !== 'modified') setSaveStatus('modified');
       const timer = setTimeout(() => {
@@ -674,7 +576,6 @@ const handleGenerate = async () => {
       return () => clearTimeout(timer);
   }, [songTitle, bpm, instrumentType, timeSignature, columns, durations, customTuning, chordNames, connections]);
 
-  // Startup: Check for Draft
   useEffect(() => {
       const savedData = localStorage.getItem('serumTab_autoSave');
       if (savedData) {
@@ -704,41 +605,56 @@ const handleGenerate = async () => {
     }
   };
 
+  const handleTogglePlay = () => {
+    if (isPlaying) {
+      audioEngine.stop();
+      setIsPlaying(false);
+      setCurrentColIndex(-1);
+    } else {
+      let startIndex = 0;
+      if (selectedColIndex > -1) {
+         startIndex = Math.floor(selectedColIndex / currentStepsPerBar) * currentStepsPerBar;
+      } else {
+         startIndex = editRowStartBarIndex * currentStepsPerBar;
+      }
+      audioEngine.start(startIndex);
+      setIsPlaying(true);
+    }
+  };
+
+const handlePlayFromStart = () => {
+    audioEngine.stop(); 
+    audioEngine.start(0); 
+    setIsPlaying(true);
+  };
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-Based Fix)
+  // Global Keyboard Shortcuts (Ref-based for stability)
   // --------------------------------------------------------------------------
   
-  // 1. Create a "Live Link" to your latest functions and state
-  const handlersRef = useRef({
+  // 1. Keep a ref to the latest state/handlers
+  const stateRef = useRef({
       handleCopyBar, 
-      handlePasteBar, 
-      handleSaveProject, 
-      handleTogglePlay, 
-      undo, 
-      redo, 
+      handlePasteBar,
+      handleSaveProject,
+      handleTogglePlay,
       handleToggleConnection,
+      undo,
+      redo,
       isReviewMode
   });
 
-  // 2. Update the link on every render so it's never stale
+  // 2. Update the ref on every render
   useEffect(() => {
-      handlersRef.current = { 
-          handleCopyBar, 
-          handlePasteBar, 
-          handleSaveProject, 
-          handleTogglePlay, 
-          undo, 
-          redo, 
-          handleToggleConnection,
-          isReviewMode
+      stateRef.current = { 
+          handleCopyBar, handlePasteBar, handleSaveProject, handleTogglePlay, handleToggleConnection, undo, redo, isReviewMode
       };
   });
 
-  // 3. The Listener (Attached ONLY ONCE, uses the Live Link)
+  // 3. The Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = handlersRef.current; // <--- Access fresh handlers here
+        const current = stateRef.current;
         const target = e.target as HTMLElement;
         const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
@@ -775,18 +691,16 @@ const handleGenerate = async () => {
 
         // Copy: Ctrl+C
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-            if (isInputFocused) return; 
+            if (isInputFocused) return;
             e.preventDefault();
-            console.log("📋 Ctrl+C Detected"); // Debug Log
             current.handleCopyBar();
             return;
         }
 
         // Paste: Ctrl+V
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-            if (isInputFocused) return; 
+            if (isInputFocused) return;
             e.preventDefault();
-            console.log("📋 Ctrl+V Detected"); // Debug Log
             current.handlePasteBar();
             return;
         }
@@ -801,108 +715,7 @@ const handleGenerate = async () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty dependency array = Robust listener!
-
-  const handleInstrumentChange = (type: InstrumentType) => {
-    if (type === instrumentType) return;
-    const isTabEmpty = columns.every(col => col.every(n => n === -1));
-    if (!isTabEmpty && !window.confirm(`Switching to ${INSTRUMENTS[type].name} will clear the current tab. Continue?`)) return;
-
-    setInstrumentType(type);
-    setCustomTuning(INSTRUMENTS[type].strings); 
-    setIsPlaying(false);
-    setCurrentColIndex(-1);
-    audioEngine.stop();
-    
-    const newCount = currentStepsPerBar * 4;
-    const defDur = getDefaultDuration(timeSignature);
-    const emptyCols = createEmptyColumns(newCount, INSTRUMENTS[type].stringCount);
-    const emptyDurs = createDefaultDurations(newCount, defDur);
-    const emptyChords = Array(newCount).fill(null);
-    
-    // Reset History
-    const newState = { columns: emptyCols, durations: emptyDurs, chordNames: emptyChords, connections: [] };
-    setHistory([newState]);
-    setHistoryIndex(0);
-
-    setColumns(emptyCols);
-    setDurations(emptyDurs);
-    setChordNames(emptyChords);
-    setConnections([]);
-    setEditRowStartBarIndex(0);
-    setActiveCell(null);
-    setGridKey(prev => prev + 1);
-  };
-
-  const handleTimeSignatureChange = (ts: TimeSignatureType) => {
-      if (ts === timeSignature) return;
-      const isTabEmpty = columns.every(col => col.every(n => n === -1));
-      if (!isTabEmpty && !window.confirm(`Switching to ${ts} will clear the current tab. Continue?`)) return;
-      
-      setTimeSignature(ts);
-      setIsPlaying(false);
-      setCurrentColIndex(-1);
-      audioEngine.stop();
-      setActiveCell(null);
-      setEditRowStartBarIndex(0);
-
-      const config = TIME_SIGNATURES[ts];
-      const newTotalSteps = config.stepsPerBar * 4;
-      const defDur = getDefaultDuration(ts);
-
-      const emptyCols = createEmptyColumns(newTotalSteps, currentInstrument.stringCount);
-      const emptyDurs = createDefaultDurations(newTotalSteps, defDur);
-      const emptyChords = Array(newTotalSteps).fill(null);
-
-      const newState = { columns: emptyCols, durations: emptyDurs, chordNames: emptyChords, connections: [] };
-      setHistory([newState]);
-      setHistoryIndex(0);
-
-      setColumns(emptyCols);
-      setDurations(emptyDurs);
-      setChordNames(emptyChords);
-      setConnections([]);
-      setToastMessage(`Switched to ${ts}`);
-      setGridKey(prev => prev + 1);
-  };
-
-  const handleTuningChange = (index: number, val: string) => {
-    const newTuning = [...customTuning];
-    newTuning[index] = val;
-    setCustomTuning(newTuning);
-  };
-
-  useEffect(() => {
-    audioEngine.setOnTickCallback((index) => setCurrentColIndex(index));
-    audioEngine.setOnStopCallback(() => {
-      setIsPlaying(false);
-      setCurrentColIndex(-1);
-    });
-  }, []);
-
-  const handleTogglePlay = () => {
-    if (isPlaying) {
-      audioEngine.stop();
-      setIsPlaying(false);
-      setCurrentColIndex(-1);
-    } else {
-      let startIndex = 0;
-      if (selectedColIndex > -1) {
-         startIndex = Math.floor(selectedColIndex / currentStepsPerBar) * currentStepsPerBar;
-      } else {
-         startIndex = editRowStartBarIndex * currentStepsPerBar;
-      }
-      audioEngine.start(startIndex);
-      setIsPlaying(true);
-    }
-  };
-
-const handlePlayFromStart = () => {
-    audioEngine.stop(); // Stop any current playback
-    audioEngine.start(0); // Start from index 0
-    setIsPlaying(true);
-    // Note: We don't change currentColIndex here because AudioEngine callback will update it instantly
-  };
+  }, []); 
 
   if (isReviewMode) {
     return (
@@ -938,6 +751,7 @@ const handlePlayFromStart = () => {
         }}
       />
 
+      {/* HEADER */}
       <header className="flex-none h-20 bg-gray-900/90 backdrop-blur-xl border-b border-white/5 flex items-center px-8 justify-between z-40 gap-8 shrink-0 shadow-2xl">
         <div className="flex items-center gap-6">
              {/* HOME BUTTON (Logo) */}
@@ -1018,90 +832,6 @@ const handlePlayFromStart = () => {
         </div>
       </header>
       
-      {/* Sub-header for Title */}
-      {/* --- NEW TOOLBAR HEADER --- */}
-      <div className="flex-none h-14 bg-gray-900 border-b border-white/5 flex items-center justify-between px-6 relative z-30">
-        
-        {/* LEFT: EDIT TOOLS (Undo, Redo, Clear, Reset) */}
-        <div className="flex items-center gap-2">
-             <div className="bg-gray-800/40 border border-white/5 rounded-lg p-1 flex items-center gap-1">
-                 <button onClick={undo} disabled={!(historyIndex > 0)} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!(historyIndex > 0) ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/10'}`} title="Undo (Ctrl+Z)">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
-                 </button>
-                 <button onClick={redo} disabled={!(historyIndex < history.length - 1)} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!(historyIndex < history.length - 1) ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/10'}`} title="Redo (Ctrl+Y)">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                 </button>
-                 <div className="w-[1px] h-5 bg-white/10 mx-1"></div>
-                 <button onClick={handleClearBar} disabled={!activeCell} className={`h-8 w-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${!activeCell ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-400 hover:bg-white/10'}`} title="Clear Selected Bar">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                 </button>
-                 <button onClick={handleClearTab} className="h-8 w-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-white/10 transition-all active:scale-95" title="Reset All">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                 </button>
-             </div>
-        </div>
-
-        {/* CENTER: TITLE INPUT */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-            <div className="relative group flex items-center justify-center gap-2">
-                {/* The Input Field */}
-            <input 
-                type="text" 
-                value={songTitle}
-                onChange={(e) => setSongTitle(e.target.value)}
-                placeholder="Untitled Project"
-                className="
-                  bg-transparent 
-                  text-sm font-bold text-gray-200 
-                  placeholder-gray-600 
-                  text-center 
-                  w-64 px-2 py-1 
-                  border-b-2 border-transparent 
-                  group-hover:border-gray-600 
-                  focus:border-cyan-500 focus:outline-none focus:text-white
-                  transition-all duration-200
-                  /* Removed font-['Courier'] so it defaults to the App's standard font */
-                "
-            />
-                <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        {/* RIGHT: PLAYBACK CONTROLS */}
-        <div className="flex items-center gap-3">
-            <div className="flex items-center bg-gray-800/40 border border-white/5 rounded-xl p-1 gap-2">
-              <button
-                onClick={handlePlayFromStart}
-                className="h-10 w-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
-                title="Play from Start"
-              >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-              </button>
-
-              <button
-                onClick={handleTogglePlay}
-                className={`h-10 w-14 rounded-lg flex items-center justify-center shadow-lg transition-all active:scale-95 border ${
-                  isPlaying 
-                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30' 
-                    : 'bg-green-500 text-white border-green-400 shadow-green-500/20 hover:scale-105'
-                }`}
-                title={isPlaying ? "Stop (Space)" : "Play from selection (Space)"}
-              >
-                {isPlaying ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current" viewBox="0 0 20 20"><rect x="5" y="5" width="4" height="10" rx="1" /><rect x="11" y="5" width="4" height="10" rx="1" /></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-current ml-0.5" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
-                )}
-              </button>
-            </div>
-        </div>
-
-      </div>
-      
       {/* Hidden File Input for Import */}
       <input 
         type="file" 
@@ -1122,6 +852,7 @@ const handlePlayFromStart = () => {
             canRedo={historyIndex < history.length - 1}
             hasSelection={!!activeCell}
             onTogglePlay={handleTogglePlay}
+            onPlayFromStart={handlePlayFromStart}
             onBpmChange={setBpm}
             onAddMeasure={handleAddMeasure}
             onAddFourMeasures={handleAddFourMeasures}
@@ -1135,8 +866,6 @@ const handlePlayFromStart = () => {
             onClearBar={handleClearBar}
             onToggleConnection={handleToggleConnection}
             onOptimize={handleOptimize}
-            
-            // --- CONNECTING THE AI GENERATOR ---
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
           />
