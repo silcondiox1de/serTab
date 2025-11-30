@@ -450,7 +450,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
           <button
             className="
               px-3 py-0.5
-              text-[10px] font-bold uppercase tracking-[0.25em]
+              text-[8px] font-bold uppercase tracking-[0.35em]
               bg-cyan-500/15 text-cyan-300
               border border-cyan-500/40
               rounded-md rounded-bl-none
