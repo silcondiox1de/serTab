@@ -84,15 +84,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: '680px', // Increased size (was 280px)
     width: '100%',
     height: 'auto',
-    marginBottom: '15px', 
+    marginBottom: '25px', 
   },
   tagline: {
     fontSize: '2rem', // Increased size (was 1.4rem)
     fontWeight: '300',  
-    color: '#0DDE16', // Slightly darker to match the size      
+    color: '#0DDE16',       
     margin: 0,
     textAlign: 'center',
-    letterSpacing: '-0.5px',
+    letterSpacing: '-0.3px',
   },
 
   separator: {
@@ -137,7 +137,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#ccc', 
   },
   comingSoon: {
-    color: '#999',
+    color: '#333',
     fontStyle: 'italic',
   },
 
