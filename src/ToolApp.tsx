@@ -708,10 +708,15 @@ const handleGenerate = async () => {
   // Global Keyboard Shortcuts
   // --------------------------------------------------------------------------
   
+  // --------------------------------------------------------------------------
+  // Global Keyboard Shortcuts
+  // --------------------------------------------------------------------------
+  
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        // Ignore if focus is in a text input (except for specific global keys)
-        const isInputFocused = (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA';
+        const target = e.target as HTMLElement;
+        // Don't trigger shortcuts if typing in an input
+        const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
         // Save: Ctrl+S
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -722,23 +727,10 @@ const handleGenerate = async () => {
 
         if (isReviewMode) return;
 
-        // Space: Toggle Play (handled previously, but ensuring non-input conflict)
+        // Play/Stop: Space
         if (e.code === 'Space' && !isInputFocused) {
              e.preventDefault(); 
-             if(isPlaying) {
-                 audioEngine.stop();
-                 setIsPlaying(false);
-                 setCurrentColIndex(-1);
-             } else {
-                 let startIndex = 0;
-                 if (selectedColIndex > -1) {
-                    startIndex = Math.floor(selectedColIndex / currentStepsPerBar) * currentStepsPerBar;
-                 } else {
-                    startIndex = editRowStartBarIndex * currentStepsPerBar;
-                 }
-                 audioEngine.start(startIndex);
-                 setIsPlaying(true);
-             }
+             handleTogglePlay();
              return;
         }
 
@@ -781,8 +773,22 @@ const handleGenerate = async () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, selectedColIndex, currentStepsPerBar, editRowStartBarIndex, isReviewMode, history, historyIndex, clipboard, columns, durations, chordNames, connections]);
-
+    
+  // CRITICAL FIX: Added 'activeCell' and 'clipboard' explicitly to dependencies
+  }, [
+    isPlaying, 
+    activeCell, // <--- This was missing/indirect before
+    clipboard,  // <--- This ensures Paste knows what's in the clipboard
+    currentStepsPerBar, 
+    editRowStartBarIndex, 
+    isReviewMode, 
+    history, 
+    historyIndex, 
+    columns, 
+    durations, 
+    chordNames, 
+    connections
+  ]);
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
