@@ -362,18 +362,39 @@ export const TabGrid: React.FC<TabGridProps> = ({
                              return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
                         });
 
-                      // --- BAR LEVEL PLAYHEAD LOGIC (simpler, per-column) ---
-                        const isPlayheadInBar =
-                          currentColumnIndex >= barStartColIdx &&
-                          currentColumnIndex < barStartColIdx + stepsPerBar;
-                        
-                        let playheadLeftPercent: number | null = null;
-                        
-                        if (isPlayheadInBar) {
-                          const stepInBar = currentColumnIndex - barStartColIdx; // 0 .. stepsPerBar-1
-                          playheadLeftPercent = (stepInBar / stepsPerBar) * 100;
+                      // --- BAR LEVEL PLAYHEAD LOGIC (duration-aware) ---
+                      const isPlayheadInBar =
+                        currentColumnIndex >= barStartColIdx &&
+                        currentColumnIndex < barStartColIdx + stepsPerBar;
+                      
+                      let playheadLeftPercent: number | null = null;
+                      
+                      if (isPlayheadInBar) {
+                        // step index within this bar: 0 .. stepsPerBar - 1
+                        const relativeIndex = currentColumnIndex - barStartColIdx;
+                      
+                        // we’ll walk through the markers and find which one the playhead is inside
+                        let stepsBefore = 0;
+                      
+                        for (const m of markers) {
+                          const start = m.colIdx;          // first step covered by this marker
+                          const end = m.colIdx + m.span;   // one past the last step
+                      
+                          if (relativeIndex >= start && relativeIndex < end) {
+                            // we’re inside this marker; how far inside?
+                            const offsetInsideMarker = relativeIndex - start; // 0 .. m.span-1
+                      
+                            // total steps before the playhead within this bar
+                            const totalSteps = stepsBefore + offsetInsideMarker;
+                            playheadLeftPercent = (totalSteps / stepsPerBar) * 100;
+                            break;
+                          }
+                      
+                          stepsBefore += m.span;
                         }
-                        
+                      }
+                      
+                                              
 
                         return (
                             <div key={actualBarIdx} className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 ${isZoomed ? 'flex-shrink-0' : 'flex-1'} ${isBarActive ? 'bg-gray-800/30' : ''}`} style={{ minWidth: isZoomed ? '400px' : '0' }}>
