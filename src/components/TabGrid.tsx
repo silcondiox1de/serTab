@@ -22,18 +22,16 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
   const strokeClass =
     "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
 
-  // Calculate the center position of the note head relative to the container
-  const singleStepWidth = 100 / span;
-  const centerPercent = singleStepWidth / 2;
+  // Center of this duration block (always middle of the span)
+  const centerPercent = 50;
 
-  // Render SVG Symbol (Head, Stem, Flags)
   const renderSymbol = () => {
     const strokeWidth = 1.5;
     const height = 32;
-    const cx = 10; // Center of 20px wide SVG
+    const cx = 10; // center inside SVG (we'll center the SVG itself)
 
     switch (duration) {
-      case "1": // Whole Note
+      case "1": // Whole
         return (
           <circle
             cx={cx}
@@ -44,14 +42,14 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
             className={strokeClass}
           />
         );
-      case "2": // Half Note
+      case "2": // Half
         return (
           <g className={strokeClass} strokeWidth={strokeWidth} fill="none">
             <line x1={cx} y1={5} x2={cx} y2={height - 8} />
             <circle cx={cx} cy={height - 5} r="4" />
           </g>
         );
-      case "4": // Quarter Note
+      case "4": // Quarter
         return (
           <line
             x1={cx}
@@ -62,14 +60,14 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
             className={strokeClass}
           />
         );
-      case "8": // 8th Note
+      case "8": // Eighth
         if (isBeamed) {
           return (
             <line
               x1={cx}
               y1={5}
               x2={cx}
-              y2={32}
+              y2={height}
               strokeWidth={strokeWidth}
               className={strokeClass}
             />
@@ -85,14 +83,14 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
             />
           </g>
         );
-      case "16": // 16th Note
+      case "16": // Sixteenth
         if (isBeamed) {
           return (
             <line
               x1={cx}
               y1={5}
               x2={cx}
-              y2={32}
+              y2={height}
               strokeWidth={strokeWidth}
               className={strokeClass}
             />
@@ -131,16 +129,15 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
     <div
       onClick={onClick}
       className="h-full relative cursor-pointer group hover:bg-white/5"
-      // use flex-weight instead of percentage width so it matches the grids above
+      // width is controlled by flex so it matches chords/notes
       style={{ flex: span, minWidth: 0 }}
       title={`Duration: 1/${duration}`}
     >
       {/* Beams Layer */}
       {isBeamed && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* 8th Beam (Bottom) */}
+          {/* 8th Beam (bottom) */}
           <div className="absolute bottom-0 w-full h-[2px]">
-            {/* From Left Edge to Center */}
             {beam8.left && (
               <div
                 className={`absolute h-full ${beamClass}`}
@@ -148,9 +145,8 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                   left: "-0.5px",
                   width: `calc(${centerPercent}% + 1.5px)`,
                 }}
-              ></div>
+              />
             )}
-            {/* From Center to Right Edge */}
             {beam8.right && (
               <div
                 className={`absolute h-full ${beamClass}`}
@@ -158,11 +154,11 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                   left: `calc(${centerPercent}% - 1px)`,
                   right: "-0.5px",
                 }}
-              ></div>
+              />
             )}
           </div>
 
-          {/* 16th Beam (Above 8th) */}
+          {/* 16th Beam (above 8th) */}
           {duration === "16" && (
             <div className="absolute bottom-[4px] w-full h-[2px]">
               {beam16.left ? (
@@ -172,9 +168,8 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                     left: "-0.5px",
                     width: `calc(${centerPercent}% + 1.5px)`,
                   }}
-                ></div>
+                />
               ) : (
-                // Stub Left (only if connected to left 8th)
                 beam8.left && (
                   <div
                     className={`absolute h-full ${beamClass}`}
@@ -182,7 +177,7 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                       right: `calc(${100 - centerPercent}% - 1px)`,
                       width: "8px",
                     }}
-                  ></div>
+                  />
                 )
               )}
 
@@ -193,9 +188,8 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                     left: `calc(${centerPercent}% - 1px)`,
                     right: "-0.5px",
                   }}
-                ></div>
+                />
               ) : (
-                // Stub Right (only if connected to right 8th)
                 beam8.right && (
                   <div
                     className={`absolute h-full ${beamClass}`}
@@ -203,7 +197,7 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
                       left: `calc(${centerPercent}% - 1px)`,
                       width: "8px",
                     }}
-                  ></div>
+                  />
                 )
               )}
             </div>
@@ -211,18 +205,20 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({
         </div>
       )}
 
-      {/* Symbol Container - Centered in the first step */}
-      <div
-        className="absolute top-0 bottom-0 flex items-center justify-center pointer-events-none"
-        style={{ left: 0, width: `${singleStepWidth}%` }}
-      >
-        <svg width="20" height="32" viewBox="0 0 20 32" className="overflow-visible">
+      {/* Symbol, centered in the whole span (so it lines up with the fret number) */}
+      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-center pointer-events-none">
+        <svg
+          width="20"
+          height="32"
+          viewBox="0 0 20 32"
+          className="overflow-visible"
+        >
           {renderSymbol()}
         </svg>
       </div>
 
-      {/* Right Border separator */}
-      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none"></div>
+      {/* Right border */}
+      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none" />
     </div>
   );
 };
