@@ -47,16 +47,15 @@ const ReviewDurationMarker = ({
   beam8: { left: boolean; right: boolean };
   beam16: { left: boolean; right: boolean };
 }) => {
-  // Make strokes a bit lighter / thinner than before
   const stroke = 'black';
-  const strokeWidth = 1; // was 1.5
-  const height = 20; // was 24
+  const strokeWidth = 1; // slightly lighter
+  const height = 20;
   const cx = 10;
 
   const isBeamed = beam8.left || beam8.right;
 
   switch (duration) {
-    case '1': // whole
+    case '1':
       return (
         <circle
           cx={cx}
@@ -67,7 +66,7 @@ const ReviewDurationMarker = ({
           fill="none"
         />
       );
-    case '2': // half
+    case '2':
       return (
         <g>
           <line
@@ -88,7 +87,7 @@ const ReviewDurationMarker = ({
           />
         </g>
       );
-    case '4': // quarter
+    case '4':
       return (
         <line
           x1={cx}
@@ -99,7 +98,7 @@ const ReviewDurationMarker = ({
           strokeWidth={strokeWidth}
         />
       );
-    case '8': // eight
+    case '8':
       if (isBeamed) {
         return (
           <line
@@ -132,7 +131,7 @@ const ReviewDurationMarker = ({
           />
         </g>
       );
-    case '16': // sixteenth
+    case '16':
       if (isBeamed) {
         return (
           <line
@@ -206,8 +205,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const totalBars = Math.ceil(columns.length / stepsPerBar);
   const totalSystems = Math.ceil(totalBars / BARS_PER_SYSTEM);
 
-  // Find last column that actually has a note -> used to hide
-  // markers beyond the end of real music.
+  // Last column in the whole piece that has any note
   let lastUsedColumn = -1;
   for (let i = columns.length - 1; i >= 0; i--) {
     if (columns[i].some((n) => n !== -1)) {
@@ -216,7 +214,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     }
   }
 
-  // Pre-process chains
+  // Chains for slides / connections
   const chains: { col: number; endCol: number; str: number }[] = [];
   {
     const used = new Set<string>();
@@ -270,7 +268,13 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     const startBar = systemIndex * BARS_PER_SYSTEM;
     const endBar = Math.min(startBar + BARS_PER_SYSTEM, totalBars);
 
-    const systemBars = [];
+    const systemBars: {
+      barIndex: number;
+      cols: TabColumn[];
+      chords: (string | null)[];
+      durs: NoteDuration[];
+    }[] = [];
+
     for (let b = startBar; b < endBar; b++) {
       const startCol = b * stepsPerBar;
       const endCol = startCol + stepsPerBar;
@@ -286,23 +290,24 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
     return (
       <div key={systemIndex} className="mb-14 break-inside-avoid">
-        {/* Chords row */}
+        {/* Chord row */}
         <div className="flex w-full h-6 mb-1 relative">
           {systemBars.map((bar, bIdx) => (
             <div
               key={bIdx}
               className="flex-1 flex border-l border-transparent relative"
             >
-              {bar.chords.map((chord, cIdx) =>
-                chord ? (
-                  <div
-                    key={cIdx}
-                    className="absolute transform -translate-x-1/2 text-sm font-bold text-blue-800"
-                    style={{ left: `${(cIdx / stepsPerBar) * 100}%` }}
-                  >
-                    {chord}
-                  </div>
-                ) : null
+              {bar.chords.map(
+                (chord, cIdx) =>
+                  chord && (
+                    <div
+                      key={cIdx}
+                      className="absolute transform -translate-x-1/2 text-sm font-bold text-blue-800"
+                      style={{ left: `${(cIdx / stepsPerBar) * 100}%` }}
+                    >
+                      {chord}
+                    </div>
+                  ),
               )}
             </div>
           ))}
@@ -310,6 +315,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
         {/* Staff + bars */}
         <div className="relative">
+          {/* Tuning on the left */}
           <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between py-1 text-[10px] text-gray-500 font-mono">
             {tuning.map((t, i) => (
               <span key={i} className="leading-none">
@@ -322,7 +328,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             {systemBars.map((bar, bIdx) => {
               const startColIndex = bar.barIndex * stepsPerBar;
 
-              // Chains for this bar
+              // Chains in this bar
               const barChains = chains.filter(
                 (c) =>
                   c.col >= startColIndex &&
@@ -332,7 +338,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
               barChains.forEach((chain, idx) => {
                 const localColIdx = chain.col - startColIndex;
-
                 const startXPercent =
                   ((localColIdx + 0.5) / stepsPerBar) * 100;
                 const distSteps = chain.endCol - chain.col;
@@ -366,7 +371,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 );
               });
 
-              // Duration markers for this bar
+              // Duration markers for this bar – ONLY where there is at least one note
               const markers: {
                 colIdx: number;
                 duration: NoteDuration;
@@ -376,13 +381,30 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               let i = 0;
               while (i < stepsPerBar) {
                 const globalIdx = startColIndex + i;
-                // stop adding markers once we are beyond last used note
                 if (lastUsedColumn !== -1 && globalIdx > lastUsedColumn) {
+                  // beyond last note in piece -> no more markers
                   break;
                 }
+
                 const d = bar.durs[i] || '8';
                 const span = getDurationSteps(d);
-                markers.push({ colIdx: i, duration: d, span, globalIdx });
+
+                // check if any column in [i, i + span) has at least one note
+                const hasNoteInSpan = bar.cols
+                  .slice(i, i + span)
+                  .some(
+                    (col) => col && col.some((n) => n !== -1),
+                  );
+
+                if (hasNoteInSpan) {
+                  markers.push({
+                    colIdx: i,
+                    duration: d,
+                    span,
+                    globalIdx,
+                  });
+                }
+
                 i += span;
               }
 
@@ -430,28 +452,24 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               return (
                 <div
                   key={bIdx}
-                  className="flex-1 border-r-2 border-black relative"
+                  className="flex-1 border-r-2 border-black flex flex-col"
                 >
-                  {/* Bar number – bigger, above everything, no overlap */}
-                  <div className="absolute -top-7 left-1 text-xs font-bold text-gray-700 font-mono bg-white px-1 rounded-sm shadow-[0_0_0_1px_rgba(0,0,0,0.05)]">
-                    {bar.barIndex + 1}
-                  </div>
-
-                  {/* String lines */}
-                  <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
-                    {Array.from({ length: instrument.stringCount }).map(
-                      (_, i) => (
+                  {/* STAFF AREA */}
+                  <div className="relative flex-1">
+                    {/* string lines */}
+                    <div className="absolute inset-0 flex flex-col justify-between py-1.5 pointer-events-none">
+                      {Array.from({
+                        length: instrument.stringCount,
+                      }).map((_, i) => (
                         <div
                           key={i}
                           className="w-full border-t border-gray-300 print:border-gray-500"
                         ></div>
-                      ),
-                    )}
-                  </div>
+                      ))}
+                    </div>
 
-                  {/* Notes + connections */}
-                  <div className="relative w-full h-full flex flex-col justify-between py-0.5 z-10">
-                    <div className="absolute inset-0 pointer-events-none overflow-visible z-20">
+                    {/* connections */}
+                    <div className="absolute inset-0 pointer-events-none overflow-visible z-10">
                       <svg
                         width="100%"
                         height="100%"
@@ -465,8 +483,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                       </svg>
                     </div>
 
-                    {Array.from({ length: instrument.stringCount }).map(
-                      (_, strIdx) => (
+                    {/* notes */}
+                    <div className="relative w-full h-full flex flex-col justify-between py-0.5 z-20">
+                      {Array.from({
+                        length: instrument.stringCount,
+                      }).map((_, strIdx) => (
                         <div
                           key={strIdx}
                           className="relative h-4 flex items-center w-full"
@@ -477,7 +498,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                             return (
                               <div
                                 key={colIdx}
-                                className="absolute transform -translate-x-1/2 bg-white px-0.5 text-sm font-bold font-mono text-black leading-none z-10"
+                                className="absolute transform -translate-x-1/2 bg-white px-0.5 text-sm font-bold font-mono text-black leading-none"
                                 style={{
                                   left: `${
                                     ((colIdx + 0.5) / stepsPerBar) * 100
@@ -489,12 +510,12 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                             );
                           })}
                         </div>
-                      ),
-                    )}
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Duration markers below staff (original style, but lighter) */}
-                  <div className="absolute top-full left-0 w-full h-8 mt-1 pointer-events-none">
+                  {/* DURATION MARKER ROW */}
+                  <div className="h-6 relative">
                     {markersWithBeams.map((m, mIdx) => {
                       const widthPercent =
                         (m.span / stepsPerBar) * 100;
@@ -504,13 +525,12 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                       const centerPercent = singleStepWidth / 2;
                       const isBeamed =
                         m.beam8.left || m.beam8.right;
-                      const beamClass =
-                        'bg-gray-500'; // was bg-black
+                      const beamClass = 'bg-gray-500';
 
                       return (
                         <div
                           key={mIdx}
-                          className="absolute top-0 h-full"
+                          className="absolute inset-y-0"
                           style={{
                             left: `${leftPercent}%`,
                             width: `${widthPercent}%`,
@@ -520,7 +540,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                             <div className="absolute inset-0">
                               {/* 8th beam */}
                               <div className="absolute bottom-0 w-full h-px">
-                                {/* beams are 1px; offsets chosen to keep them visually continuous */}
                                 {m.beam8.left && (
                                   <div
                                     className={`absolute h-full ${beamClass}`}
@@ -586,9 +605,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                             </div>
                           )}
 
-                          {/* Note symbol itself (with tails) */}
+                          {/* symbol */}
                           <div
-                            className="absolute top-0 bottom-0 flex items-center justify-center"
+                            className="absolute inset-y-0 flex items-center justify-center"
                             style={{
                               left: 0,
                               width: `${singleStepWidth}%`,
@@ -611,10 +630,18 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* BAR NUMBER ROW (separate, no overlap) */}
+                  <div className="h-6 flex items-center justify-center">
+                    <div className="inline-flex items-center justify-center px-2 py-0.5 rounded-md border border-gray-300 bg-white text-xs font-mono font-bold text-gray-700">
+                      {bar.barIndex + 1}
+                    </div>
+                  </div>
                 </div>
               );
             })}
 
+            {/* filler for partial system */}
             {systemBars.length < BARS_PER_SYSTEM && (
               <div
                 className="flex-[0_0_auto]"
@@ -654,11 +681,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
         }
       `}</style>
 
-      {/* Top bar (screen only) */}
+      {/* Top nav (screen only) */}
       <div className="sticky top-0 bg-white border-b border-gray-300 px-6 py-3 flex justify-between items-center shadow-sm z-50 print:hidden">
         <div className="flex items-center space-x-4">
           <h2 className="font-bold text-gray-800 text-lg">Review Mode</h2>
-          <div className="h-4 w-[1px] bg-gray-300"></div>
+          <div className="h-4 w-[1px] bg-gray-300" />
           <span className="text-sm text-gray-600">{title}</span>
         </div>
         <div className="flex space-x-3">
