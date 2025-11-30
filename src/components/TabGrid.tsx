@@ -5,13 +5,19 @@ import { TabCell } from './TabCell';
 interface DurationMarkerProps {
   duration: NoteDuration;
   onClick: () => void;
-  widthPercent: number;
   span: number; // Number of steps this note occupies
   beam8: { left: boolean; right: boolean };
   beam16: { left: boolean; right: boolean };
 }
 
-const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widthPercent, span, beam8, beam16 }) => {
+const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, span, beam8, beam16 }) => {
+  const isBeamed = beam8.left || beam8.right;
+  const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
+  const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
+
+  // Calculate the center position of the note head relative to the container
+  const singleStepWidth = 100 / span;
+  const centerPercent = singleStepWidth / 2;
   const isBeamed = beam8.left || beam8.right;
   const beamClass = "bg-gray-400 group-hover:bg-cyan-400 transition-colors";
   const strokeClass = "stroke-gray-400 group-hover:stroke-cyan-400 transition-colors";
@@ -68,7 +74,8 @@ const DurationMarker: React.FC<DurationMarkerProps> = ({ duration, onClick, widt
       <div 
         onClick={onClick}
         className="h-full relative cursor-pointer group hover:bg-white/5"
-        style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
+        // use flex-weight instead of percentage width
+        style={{ flex: span, minWidth: 0 }}
         title={`Duration: 1/${duration}`}
       >
          {/* Beams Layer */}
@@ -608,14 +615,15 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                 <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
 
                                 <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative border-b border-gray-800 bg-gray-900/50`}>
-                                   {markersWithBeams.map((marker) => {
-                                      const widthPercent = (marker.span / stepsPerBar) * 100;
-                                      const chord = chordNames[marker.globalIdx];
-                                      return (
-                                          <div key={`chord-${marker.globalIdx}`} 
-                                               className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group"
-                                               style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
-                                          >
+                                  {markersWithBeams.map((marker) => {
+                                     const chord = chordNames[marker.globalIdx];
+                                     return (
+                                        <div
+                                          key={`chord-${marker.globalIdx}`}
+                                          className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group"
+                                          style={{ flex: marker.span, minWidth: 0 }}
+                                        >
+
                                               <input
                                                  type="text"
                                                  value={chord || ''}
@@ -658,14 +666,15 @@ export const TabGrid: React.FC<TabGridProps> = ({
 
                                             {markersWithBeams.map((marker) => {
                                                 const globalColIdx = marker.globalIdx;
-                                                const widthPercent = (marker.span / stepsPerBar) * 100;
-                                                const isPlayingThisCell = currentColumnIndex >= marker.globalIdx && currentColumnIndex < marker.globalIdx + marker.span;
-
+                                                const isPlayingThisCell = ...
+                                            
                                                 return (
-                                                    <div key={globalColIdx} 
-                                                         className="flex-1 relative border-r border-gray-800 last:border-0"
-                                                         style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}
+                                                    <div
+                                                      key={globalColIdx}
+                                                      className="relative border-r border-gray-800 last:border-0"
+                                                      style={{ flex: marker.span, minWidth: 0 }}
                                                     >
+
                                                          {strIdx === 0 && isPlayingThisCell && (
                                                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-cyan-400 rounded-full z-40 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse"></div>
                                                         )}
@@ -689,20 +698,17 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                 </div>
 
                                 <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-800 bg-gray-900/50 relative`}>
-                                     {markersWithBeams.map((marker) => {
-                                         const widthPercent = (marker.span / stepsPerBar) * 100;
-                                         return (
-                                            <DurationMarker 
-                                                key={marker.globalIdx}
-                                                duration={marker.duration}
-                                                widthPercent={widthPercent}
-                                                span={marker.span}
-                                                onClick={() => handleDurationClick(marker.globalIdx)}
-                                                beam8={marker.beam8}
-                                                beam16={marker.beam16}
-                                            />
-                                         )
-                                     })}
+                                  {markersWithBeams.map((marker) => (
+                                    <DurationMarker 
+                                      key={marker.globalIdx}
+                                      duration={marker.duration}
+                                      span={marker.span}
+                                      onClick={() => handleDurationClick(marker.globalIdx)}
+                                      beam8={marker.beam8}
+                                      beam16={marker.beam16}
+                                    />
+                                  ))}
+
                                      {!isValidDuration && (
                                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse" title="Bar duration mismatch"></div>
                                      )}
