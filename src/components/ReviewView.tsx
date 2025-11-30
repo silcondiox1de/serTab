@@ -634,7 +634,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                   {/* BAR NUMBER ROW (separate, no overlap) */}
                   <div className="absolute -top-4 left-1 inline-flex items-center justify-center px-2 py-0.5 rounded-md border border-gray-300 bg-white text-xs font-mono font-bold text-gray-700 shadow-sm">
                       {bar.barIndex + 1}
-                    </div>
                   </div>
                 </div>
               );
