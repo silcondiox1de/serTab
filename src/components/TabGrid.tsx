@@ -388,6 +388,12 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-400 rounded-full shadow-lg" />
                                   </div>
                                 )}
+                              {isPlayheadInBar && (
+                                <div className="absolute top-1 right-2 text-[9px] text-green-400 z-50">
+                                  {currentColumnIndex}
+                                </div>
+                              )}
+
 
                                 {/* -------------------------------------------- */}
 
