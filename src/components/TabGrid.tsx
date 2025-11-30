@@ -98,7 +98,6 @@ export const TabGrid: React.FC<TabGridProps> = ({
   const wheelTimeoutRef = useRef<number | null>(null);
   const editAreaRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to follow playhead
   useEffect(() => {
     if (currentColumnIndex >= 0) {
       const playingBarIndex = Math.floor(currentColumnIndex / stepsPerBar);
@@ -280,6 +279,9 @@ export const TabGrid: React.FC<TabGridProps> = ({
     const barsToRender = displayBars.slice(editRowStartBarIndex, editRowStartBarIndex + EDIT_BARS_PER_ROW);
     const rowStartColIndex = editRowStartBarIndex * stepsPerBar;
 
+    const connectionPaths: React.ReactElement[] = [];
+    const visibleChains = chains.filter(c => c.col >= rowStartColIndex && c.col < rowStartColIndex + (EDIT_BARS_PER_ROW * stepsPerBar));
+    
     return (
         <div ref={editAreaRef} className="relative pl-14 mb-8">
             <div className="absolute -top-3 left-0 w-14 flex justify-center z-30">
@@ -306,8 +308,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                 </div>
             </div>
 
-            {/* --- OVERFLOW VISIBLE IS KEY FOR THE DOT --- */}
-            <div className={`flex overflow-x-auto pb-2 pt-4 -mt-4 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl overflow-visible ${isZoomed ? '' : 'w-full'}`}>
+            <div className={`flex overflow-x-auto pb-2 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl overflow-visible ${isZoomed ? '' : 'w-full'}`}>
                  <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
                     {barsToRender.map((_, barOffset) => {
                         const actualBarIdx = editRowStartBarIndex + barOffset;
@@ -383,18 +384,17 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                 const globalColIdx = marker.globalIdx;
                                                 const widthPercent = (marker.span / stepsPerBar) * 100;
                                                 
-                                                // --- PLAYHEAD VISUAL LOGIC ---
-                                                // Determine if the playhead falls within this specific cell's duration span
+                                                // --- NEW PLAYHEAD LOGIC START ---
+                                                // Checks if current playhead position falls within this cell's time window
                                                 const isPlayingThisCell = currentColumnIndex >= marker.globalIdx && currentColumnIndex < marker.globalIdx + marker.span;
-                                                
-                                                // Calculate offset percent for smoother movement across long notes
-                                                // If current index is 5 and note starts at 4 with span 4: (5-4)/4 = 25%
+                                                // Calculates exact % offset for smoother animation
                                                 const playOffset = ((currentColumnIndex - marker.globalIdx) / marker.span) * 100;
+                                                // --- NEW PLAYHEAD LOGIC END ---
 
                                                 return (
                                                     <div key={globalColIdx} className="flex-1 relative border-r border-gray-800 last:border-0" style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}>
                                                          
-                                                         {/* PLAYHEAD DOT (Top string only) */}
+                                                         {/* Playhead Dot (Green Circle on Top String) */}
                                                          {strIdx === 0 && isPlayingThisCell && (
                                                             <div 
                                                                 className="absolute -top-3 w-3 h-3 bg-green-400 rounded-full z-[100] shadow-[0_0_10px_rgba(74,222,128,0.8)] animate-pulse pointer-events-none -ml-1.5"
@@ -402,7 +402,7 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                             ></div>
                                                          )}
                                                          
-                                                         {/* PLAYHEAD LINE */}
+                                                         {/* Playhead Line (Vertical Green Line) */}
                                                          {isPlayingThisCell && (
                                                             <div 
                                                                 className="absolute top-0 bottom-0 w-[2px] bg-green-400/50 z-[100] pointer-events-none shadow-[0_0_8px_rgba(74,222,128,0.6)]"
