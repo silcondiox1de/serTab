@@ -294,3 +294,160 @@ export const TabGrid: React.FC<TabGridProps> = ({
                     </div>
                     <div className="flex-1 flex flex-col justify-center relative">
                         {tuning.map((label, i) => (
+                            <div key={i} className={`${DIM.STRING_HEIGHT} flex items-center justify-center shrink-0 px-1 relative group`}>
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-600 rounded-full -ml-1 shadow-inner"></div>
+                                <input type="text" value={label} onChange={(e) => onTuningChange(i, e.target.value)} className="w-full bg-transparent text-center font-bold font-mono focus:outline-none border-transparent text-sm text-gray-300 focus:text-cyan-400 hover:text-white transition-colors cursor-text z-10" maxLength={2} />
+                            </div>
+                        ))}
+                    </div>
+                    <div className={`${DIM.DUR_ROW_HEIGHT} w-full shrink-0 flex items-center justify-center border-t border-gray-700/50`}>
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Dur</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- OVERFLOW VISIBLE IS KEY FOR THE DOT --- */}
+            <div className={`flex overflow-x-auto pb-2 pt-4 -mt-4 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl overflow-visible ${isZoomed ? '' : 'w-full'}`}>
+                 <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
+                    {barsToRender.map((_, barOffset) => {
+                        const actualBarIdx = editRowStartBarIndex + barOffset;
+                        const barStartColIdx = rowStartColIndex + (barOffset * stepsPerBar);
+                        const isBarActive = actualBarIdx === Math.floor((activeCell?.col ?? -1) / stepsPerBar);
+
+                        const markers: any[] = [];
+                        let totalStepsUsed = 0;
+                        let i = 0;
+                        while(i < stepsPerBar) {
+                           const globalIdx = barStartColIdx + i;
+                           const d = durations[globalIdx] || '8';
+                           const span = getDurationSteps(d);
+                           markers.push({ globalIdx: globalIdx, colIdx: i, duration: d, span: span });
+                           totalStepsUsed += span;
+                           i += span;
+                        }
+                        const isValidDuration = totalStepsUsed === stepsPerBar;
+
+                        const markersWithBeams = markers.map((m, idx) => {
+                             const is8or16 = m.duration === '8' || m.duration === '16';
+                             const is16 = m.duration === '16';
+                             const currentBeat = Math.floor(m.colIdx / 4);
+                             let beam8Right = false, beam16Right = false;
+                             const next = markers[idx + 1];
+                             if (next) {
+                                 const nextBeat = Math.floor(next.colIdx / 4);
+                                 const nextIs8or16 = next.duration === '8' || next.duration === '16';
+                                 const nextIs16 = next.duration === '16';
+                                 if (currentBeat === nextBeat) {
+                                     if (is8or16 && nextIs8or16) beam8Right = true;
+                                     if (is16 && nextIs16) beam16Right = true;
+                                 }
+                             }
+                             let beam8Left = false, beam16Left = false;
+                             const prev = markers[idx - 1];
+                             if (prev) {
+                                 const prevBeat = Math.floor(prev.colIdx / 4);
+                                 const prevIs8or16 = prev.duration === '8' || prev.duration === '16';
+                                 const prevIs16 = prev.duration === '16';
+                                 if (currentBeat === prevBeat) {
+                                     if (is8or16 && prevIs8or16) beam8Left = true;
+                                     if (is16 && prevIs16) beam16Left = true;
+                                 }
+                             }
+                             return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
+                        });
+
+                        return (
+                            <div key={actualBarIdx} className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 ${isZoomed ? 'flex-shrink-0' : 'flex-1'} ${isBarActive ? 'bg-gray-800/30' : ''}`} style={{ minWidth: isZoomed ? '400px' : '0' }}>
+                                <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold bg-[#111827] px-1 rounded">{actualBarIdx + 1}</div>
+                                <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
+
+                                <div className={`flex w-full ${DIM.CHORD_ROW_HEIGHT} relative border-b border-gray-800 bg-gray-900/50`}>
+                                   {markersWithBeams.map((marker) => {
+                                      const widthPercent = (marker.span / stepsPerBar) * 100;
+                                      const chord = chordNames[marker.globalIdx];
+                                      return (
+                                          <div key={`chord-${marker.globalIdx}`} className="flex items-center justify-center border-r border-gray-800/50 last:border-0 relative group" style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}>
+                                              <input type="text" value={chord || ''} onChange={(e) => onUpdateChord(marker.globalIdx, e.target.value)} onFocus={() => onActiveCellChange({ col: marker.globalIdx, str: 0 })} className="w-full h-full bg-transparent text-center font-bold text-cyan-400 placeholder-gray-700 focus:outline-none text-[10px] focus:bg-gray-800 transition-colors" placeholder="+" />
+                                          </div>
+                                      );
+                                   })}
+                                </div>
+
+                                <div className="flex flex-col w-full relative"> 
+                                    {Array.from({ length: instrument.stringCount }).map((_, strIdx) => {
+                                        const thickness = 1 + (strIdx / (instrument.stringCount - 1)) * 2;
+                                        return (
+                                        <div key={strIdx} className={`flex ${DIM.STRING_HEIGHT} relative last:border-0`}>
+                                            <div className="absolute inset-x-0 bg-gray-600 z-0 pointer-events-none" style={{ height: `${thickness}px`, top: '50%', marginTop: `-${thickness/2}px`, opacity: 0.3 + (strIdx * 0.1) }}></div>
+                                            {markersWithBeams.map((marker) => {
+                                                const globalColIdx = marker.globalIdx;
+                                                const widthPercent = (marker.span / stepsPerBar) * 100;
+                                                
+                                                // --- PLAYHEAD VISUAL LOGIC ---
+                                                // Determine if the playhead falls within this specific cell's duration span
+                                                const isPlayingThisCell = currentColumnIndex >= marker.globalIdx && currentColumnIndex < marker.globalIdx + marker.span;
+                                                
+                                                // Calculate offset percent for smoother movement across long notes
+                                                // If current index is 5 and note starts at 4 with span 4: (5-4)/4 = 25%
+                                                const playOffset = ((currentColumnIndex - marker.globalIdx) / marker.span) * 100;
+
+                                                return (
+                                                    <div key={globalColIdx} className="flex-1 relative border-r border-gray-800 last:border-0" style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}>
+                                                         
+                                                         {/* PLAYHEAD DOT (Top string only) */}
+                                                         {strIdx === 0 && isPlayingThisCell && (
+                                                            <div 
+                                                                className="absolute -top-3 w-3 h-3 bg-green-400 rounded-full z-[100] shadow-[0_0_10px_rgba(74,222,128,0.8)] animate-pulse pointer-events-none -ml-1.5"
+                                                                style={{ left: `${playOffset}%` }}
+                                                            ></div>
+                                                         )}
+                                                         
+                                                         {/* PLAYHEAD LINE */}
+                                                         {isPlayingThisCell && (
+                                                            <div 
+                                                                className="absolute top-0 bottom-0 w-[2px] bg-green-400/50 z-[100] pointer-events-none shadow-[0_0_8px_rgba(74,222,128,0.6)]"
+                                                                style={{ left: `${playOffset}%` }}
+                                                            ></div>
+                                                         )}
+
+                                                         <TabCell
+                                                            note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
+                                                            stringIndex={strIdx}
+                                                            columnIndex={globalColIdx}
+                                                            isActive={activeCell?.col === globalColIdx && activeCell?.str === strIdx}
+                                                            onFocus={() => onActiveCellChange({ col: globalColIdx, str: strIdx })}
+                                                            onUpdate={(val) => handleUpdateNote(globalColIdx, strIdx, val)}
+                                                            onNavigate={(dir) => handleNavigate(globalColIdx, strIdx, dir)}
+                                                         />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className={`flex w-full ${DIM.DUR_ROW_HEIGHT} border-t border-gray-800 bg-gray-900/50 relative`}>
+                                     {markersWithBeams.map((marker) => {
+                                         const widthPercent = (marker.span / stepsPerBar) * 100;
+                                         return <DurationMarker key={marker.globalIdx} duration={marker.duration} widthPercent={widthPercent} span={marker.span} onClick={() => handleDurationClick(marker.globalIdx)} beam8={marker.beam8} beam16={marker.beam16} />;
+                                     })}
+                                     {!isValidDuration && <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse" title="Bar duration mismatch"></div>}
+                                </div>
+                            </div>
+                        );
+                    })}
+                 </div>
+            </div>
+        </div>
+    );
+  };
+
+  return (
+    <div className="relative w-full h-full p-8 pb-32 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+        {renderPreviewSection(0, editRowStartBarIndex)}
+        {renderEditArea()}
+        {renderPreviewSection(editRowStartBarIndex + EDIT_BARS_PER_ROW, totalBars)}
+    </div>
+  );
+};
