@@ -101,6 +101,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const totalBars = Math.ceil(columns.length / stepsPerBar);
   const totalSystems = Math.ceil(totalBars / BARS_PER_SYSTEM);
 
+  // Last column in the whole piece that has any note
+  let lastUsedColumn = -1;
+  for (let i = columns.length - 1; i >= 0; i--) {
+    if (columns[i].some((n) => n !== -1)) {
+      lastUsedColumn = i;
+      break;
+    }
+  }
+
   // Chains logic
   const chains: { col: number; endCol: number; str: number }[] = [];
   {
@@ -178,7 +187,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
         {/* Staff + bars */}
         <div className="relative">
-          {/* 1. REMOVED TUNING MARKERS ON LEFT */}
+          {/* 1. TUNING MARKERS REMOVED (Kept update 1) */}
           
           <div className="border-l-2 border-black flex w-full">
             {systemBars.map((bar, bIdx) => {
@@ -206,11 +215,24 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               let i = 0;
               while (i < stepsPerBar) {
                 const globalIdx = startColIndex + i;
+                if (lastUsedColumn !== -1 && globalIdx > lastUsedColumn) {
+                    // Stop if we passed the last note in song
+                    break;
+                }
+
                 const d = bar.durs[i] || '8';
                 const span = getDurationSteps(d);
                 
-                // 3. REMOVED "hasNoteInSpan" CHECK so duration markers always show (filling the gap)
-                markers.push({ colIdx: i, duration: d, span, beam8: { left: false, right: false }, beam16: { left: false, right: false } });
+                // --- REVERT 3: RESTORED CHECK ---
+                // Only show marker if there is a note in this timeframe
+                const hasNoteInSpan = bar.cols
+                  .slice(i, i + span)
+                  .some(col => col && col.some(n => n !== -1));
+                // --------------------------------
+
+                if (hasNoteInSpan) {
+                    markers.push({ colIdx: i, duration: d, span, beam8: { left: false, right: false }, beam16: { left: false, right: false } });
+                }
                 
                 i += span;
               }
@@ -246,9 +268,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               });
 
               return (
-                <div key={bIdx} className="flex-1 border-r-2 border-black flex flex-col relative"> {/* 4. ADDED border-r-2 for barline */}
+                <div key={bIdx} className="flex-1 border-r-2 border-black flex flex-col relative"> {/* 4. BARLINE (Kept update 4) */}
                   
-                  {/* 2. BAR NUMBER (Moved to Top Left) */}
+                  {/* 2. BAR NUMBER TOP LEFT (Kept update 2) */}
                   <div className="absolute top-[-20px] left-0 text-xs font-mono font-bold text-gray-500">
                     {bar.barIndex + 1}
                   </div>
