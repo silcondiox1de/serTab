@@ -172,8 +172,7 @@ export const Controls: React.FC<ControlsProps> = ({
                   +4 Bars
                 </button>
               </Group>
-            
-            //<Group> ...standard tools... </Group>
+
             
             {/* divider between 4 (+ Bars) and 5 (Serum Lab) */}
             <Divider />
