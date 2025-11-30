@@ -117,7 +117,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: '700',
     color: '#666',      
     margin: 0,
-    textTransform: 'uppercase', // Optional: looks good with Courier
+    //textTransform: 'uppercase', // Optional: looks good with Courier
     letterSpacing: '1px',
   },
   toolRow: {
