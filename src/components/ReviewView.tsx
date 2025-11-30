@@ -169,7 +169,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     if (systemBars.length === 0) return null;
 
     return (
-      <div key={systemIndex} className="mb-14 break-inside-avoid">
+      // Increased bottom margin from mb-14 to mb-20 to create more space between rows
+      <div key={systemIndex} className="mb-20 break-inside-avoid">
         {/* Chord row */}
         <div className="flex w-full h-6 mb-1 relative">
           {systemBars.map((bar, bIdx) => (
@@ -187,7 +188,6 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
         {/* Staff + bars */}
         <div className="relative">
-          {/* 1. TUNING MARKERS REMOVED (Kept update 1) */}
           
           <div className="border-l-2 border-black flex w-full">
             {systemBars.map((bar, bIdx) => {
@@ -223,11 +223,14 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                 const d = bar.durs[i] || '8';
                 const span = getDurationSteps(d);
                 
-                // --- REVERT 3: REMOVED 'hasNoteInSpan' CHECK ---
-                // Now we push a marker regardless of whether there is a note or not.
-                // This fills the duration bar completely.
-                markers.push({ colIdx: i, duration: d, span, beam8: { left: false, right: false }, beam16: { left: false, right: false } });
-                // -----------------------------------------------
+                // Reverted logic: show marker only if there is a note
+                const hasNoteInSpan = bar.cols
+                  .slice(i, i + span)
+                  .some(col => col && col.some(n => n !== -1));
+                
+                if (hasNoteInSpan) {
+                    markers.push({ colIdx: i, duration: d, span, beam8: { left: false, right: false }, beam16: { left: false, right: false } });
+                }
                 
                 i += span;
               }
@@ -263,9 +266,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               });
 
               return (
-                <div key={bIdx} className="flex-1 border-r-2 border-black flex flex-col relative"> {/* 4. BARLINE (Kept update 4) */}
+                <div key={bIdx} className="flex-1 border-r-2 border-black flex flex-col relative"> 
                   
-                  {/* 2. BAR NUMBER TOP LEFT (Kept update 2) */}
                   <div className="absolute top-[-20px] left-0 text-xs font-mono font-bold text-gray-500">
                     {bar.barIndex + 1}
                   </div>
