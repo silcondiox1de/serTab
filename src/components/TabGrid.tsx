@@ -108,6 +108,13 @@ export const TabGrid: React.FC<TabGridProps> = ({
     }
   }, [currentColumnIndex, stepsPerBar, editRowStartBarIndex, onEditRowStartChange]);
 
+  // Auto-scroll for playhead
+  useEffect(() => {
+    const el = editAreaRef.current;
+    if (!el || currentColumnIndex < 0) return;
+    // Logic to ensure playhead is visible would go here, but the page-flip logic above handles the main jumps.
+  }, [currentColumnIndex]);
+
   useEffect(() => {
     const el = editAreaRef.current;
     if (!el) return;
@@ -279,9 +286,6 @@ export const TabGrid: React.FC<TabGridProps> = ({
     const barsToRender = displayBars.slice(editRowStartBarIndex, editRowStartBarIndex + EDIT_BARS_PER_ROW);
     const rowStartColIndex = editRowStartBarIndex * stepsPerBar;
 
-    const connectionPaths: React.ReactElement[] = [];
-    const visibleChains = chains.filter(c => c.col >= rowStartColIndex && c.col < rowStartColIndex + (EDIT_BARS_PER_ROW * stepsPerBar));
-    
     return (
         <div ref={editAreaRef} className="relative pl-14 mb-8">
             <div className="absolute -top-3 left-0 w-14 flex justify-center z-30">
@@ -308,7 +312,8 @@ export const TabGrid: React.FC<TabGridProps> = ({
                 </div>
             </div>
 
-            <div className={`flex overflow-x-auto pb-2 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl overflow-visible ${isZoomed ? '' : 'w-full'}`}>
+            {/* --- OVERFLOW VISIBLE for Playhead --- */}
+            <div className={`flex overflow-x-auto pb-2 pt-4 -mt-4 tab-scroll bg-[#111827] rounded-r-lg border border-gray-700 shadow-2xl overflow-visible ${isZoomed ? '' : 'w-full'}`}>
                  <div className={`flex min-w-full ${isZoomed ? '' : 'w-full'}`}>
                     {barsToRender.map((_, barOffset) => {
                         const actualBarIdx = editRowStartBarIndex + barOffset;
@@ -357,8 +362,43 @@ export const TabGrid: React.FC<TabGridProps> = ({
                              return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
                         });
 
+                        // --- BAR LEVEL PLAYHEAD LOGIC ---
+                        // Check if the playhead is currently inside this specific bar
+                        const isPlayheadInBar = currentColumnIndex >= barStartColIdx && currentColumnIndex < barStartColIdx + stepsPerBar;
+                        let playheadLeftPercent = 0;
+                        
+                        if (isPlayheadInBar) {
+                            // Calculate exact percentage position within this bar
+                            const relativeIndex = currentColumnIndex - barStartColIdx;
+                            
+                            // We need to sum the width of all markers up to the current one to get exact position
+                            // because markers have variable widths
+                            let stepsCounted = 0;
+                            for(let m of markers) {
+                                if (m.globalIdx === currentColumnIndex) {
+                                    // Found the current marker
+                                    playheadLeftPercent = (stepsCounted / stepsPerBar) * 100;
+                                    break;
+                                }
+                                stepsCounted += m.span;
+                            }
+                        }
+
                         return (
                             <div key={actualBarIdx} className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 ${isZoomed ? 'flex-shrink-0' : 'flex-1'} ${isBarActive ? 'bg-gray-800/30' : ''}`} style={{ minWidth: isZoomed ? '400px' : '0' }}>
+                                
+                                {/* --- GLOBAL PLAYHEAD OVERLAY (Bar Level) --- */}
+                                {isPlayheadInBar && (
+                                    <div 
+                                        className="absolute top-0 bottom-0 w-[2px] bg-green-400 z-50 pointer-events-none shadow-[0_0_15px_rgba(74,222,128,0.9)] transition-all duration-75 ease-linear"
+                                        style={{ left: `${playheadLeftPercent}%` }}
+                                    >
+                                        {/* The glowing head */}
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-400 rounded-full shadow-lg"></div>
+                                    </div>
+                                )}
+                                {/* -------------------------------------------- */}
+
                                 <div className="absolute top-1 left-2 text-[10px] text-gray-500 font-mono select-none z-10 font-bold bg-[#111827] px-1 rounded">{actualBarIdx + 1}</div>
                                 <div className={`${DIM.CHORD_ROW_MARGIN} w-full shrink-0 border-b border-gray-800`}></div>
 
@@ -384,32 +424,8 @@ export const TabGrid: React.FC<TabGridProps> = ({
                                                 const globalColIdx = marker.globalIdx;
                                                 const widthPercent = (marker.span / stepsPerBar) * 100;
                                                 
-                                                // --- NEW PLAYHEAD LOGIC START ---
-                                                // Checks if current playhead position falls within this cell's time window
-                                                const isPlayingThisCell = currentColumnIndex >= marker.globalIdx && currentColumnIndex < marker.globalIdx + marker.span;
-                                                // Calculates exact % offset for smoother animation
-                                                const playOffset = ((currentColumnIndex - marker.globalIdx) / marker.span) * 100;
-                                                // --- NEW PLAYHEAD LOGIC END ---
-
                                                 return (
                                                     <div key={globalColIdx} className="flex-1 relative border-r border-gray-800 last:border-0" style={{ width: `${widthPercent}%`, flex: `0 0 ${widthPercent}%` }}>
-                                                         
-                                                         {/* Playhead Dot (Green Circle on Top String) */}
-                                                         {strIdx === 0 && isPlayingThisCell && (
-                                                            <div 
-                                                                className="absolute -top-3 w-3 h-3 bg-green-400 rounded-full z-[100] shadow-[0_0_10px_rgba(74,222,128,0.8)] animate-pulse pointer-events-none -ml-1.5"
-                                                                style={{ left: `${playOffset}%` }}
-                                                            ></div>
-                                                         )}
-                                                         
-                                                         {/* Playhead Line (Vertical Green Line) */}
-                                                         {isPlayingThisCell && (
-                                                            <div 
-                                                                className="absolute top-0 bottom-0 w-[2px] bg-green-400/50 z-[100] pointer-events-none shadow-[0_0_8px_rgba(74,222,128,0.6)]"
-                                                                style={{ left: `${playOffset}%` }}
-                                                            ></div>
-                                                         )}
-
                                                          <TabCell
                                                             note={columns[globalColIdx] ? columns[globalColIdx][strIdx] : -1}
                                                             stringIndex={strIdx}
