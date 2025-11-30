@@ -114,22 +114,72 @@ export const Controls: React.FC<ControlsProps> = ({
             </Group>
 
             {/* 2. STANDARD TOOLS (Consolidated Group) */}
-            <Group>
-                <button onClick={onOpenChordLibrary} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"><span>🎵</span> Chords</button>
-                <button onClick={onToggleZoom} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${isZoomed ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> {isZoomed ? 'Out' : 'In'}
+              <Group>
+                <button
+                  onClick={onOpenChordLibrary}
+                  className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>🎵</span> Chords
                 </button>
-                
+              
+                {/* divider between 2 (Chords) and 3 (In) */}
                 <Divider />
-                
-                <button onClick={onToggleConnection} disabled={!hasSelection} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${!hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'}`} title="Link/Slur (L)">
-                    <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none"><path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" /></svg> Link
+              
+                <button
+                  onClick={onToggleZoom}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                    isZoomed ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                  {isZoomed ? 'Out' : 'In'}
                 </button>
-                
+              
+                {/* divider between 3 (In) and Link */}
                 <Divider />
-
-                <button onClick={onAddMeasure} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 1 Bar">+1 Bar</button>
-                <button onClick={onAddFourMeasures} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 4 Bars">+4 Bars</button>
+              
+                <button
+                  onClick={onToggleConnection}
+                  disabled={!hasSelection}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                    !hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                  title="Link/Slur (L)"
+                >
+                  <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none">
+                    <path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  Link
+                </button>
+              
+                {/* divider between Link and 4 (+ Bars) */}
+                <Divider />
+              
+                <button
+                  onClick={onAddMeasure}
+                  className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95"
+                  title="Add 1 Bar"
+                >
+                  +1 Bar
+                </button>
+                <button
+                  onClick={onAddFourMeasures}
+                  className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95"
+                  title="Add 4 Bars"
+                >
+                  +4 Bars
+                </button>
+              </Group>
+            
+            <Group> ...standard tools... </Group>
+            
+            {/* divider between 4 (+ Bars) and 5 (Serum Lab) */}
+            <Divider />
+            
+            <Group className="border-purple-500/50 bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 shadow-lg shadow-purple-900/20">
+              ...
             </Group>
 
             {/* 3. SERUM LAB (Right Aligned & Highlighted) */}
