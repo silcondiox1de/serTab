@@ -315,14 +315,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
         {/* Staff + bars */}
         <div className="relative">
-          {/* Tuning on the left */}
-          <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between py-1 text-[10px] text-gray-500 font-mono">
-            {tuning.map((t, i) => (
-              <span key={i} className="leading-none">
-                {t}
-              </span>
-            ))}
-          </div>
+          {/* NOTE: tuning block removed here */}
 
           <div className="border-l-2 border-black flex w-full">
             {systemBars.map((bar, bIdx) => {
