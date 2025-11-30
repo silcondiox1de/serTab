@@ -78,6 +78,12 @@ function Toast(props: { message: string | null; onClose: () => void }) {
   );
 }
 
+type Connection = {
+  columns: TabColumn[];
+  durations: NoteDuration[];
+  chordNames: (string | null)[];
+  connections: Connection[];
+};
 
 interface HistoryState {
   columns: TabColumn[];
@@ -113,6 +119,8 @@ const App: React.FC = () => {
 
   // Selection state
   const [activeCell, setActiveCell] = useState<{ col: number; str: number } | null>(null);
+  // When non-null, user has clicked "Link" once and we are waiting for the target cell
+  const [pendingLinkStart, setPendingLinkStart] = useState<{ col: number; str: number } | null>(null);
   const selectedColIndex = activeCell ? activeCell.col : -1;
 
   // Notification
@@ -129,7 +137,7 @@ const App: React.FC = () => {
   const [chordNames, setChordNames] = useState<(string | null)[]>(Array(initialSteps).fill(null));
   
   // Note Connections (Slurs)
-  const [connections, setConnections] = useState<{ col: number; str: number }[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
 
   // History & Clipboard
   const [history, setHistory] = useState<HistoryState[]>([]);
@@ -361,48 +369,137 @@ const handleGenerate = async () => {
     newChords[index] = val;
     updateStateWithHistory(columns, durations, newChords, connections);
   };
-  
-  const handleToggleConnection = () => {
-    if (!activeCell) return;
-    const { col, str } = activeCell;
-    
-    // Check if we are deleting or adding
-    const exists = connections.some(c => c.col === col && c.str === str);
-    
-    if (exists) {
-        // Remove existing
-        const newConnections = connections.filter(c => !(c.col === col && c.str === str));
-        setToastMessage("Removed Link");
-        updateStateWithHistory(columns, durations, chordNames, newConnections);
-    } else {
-        // Validation for adding
-        const currentNote = columns[col][str];
-        if (currentNote === -1) return; // No note to link from
+  const cellMatchesConnection = (
+  cell: { col: number; str: number },
+  conn: Connection
+) => {
+  return (
+    (conn.fromCol === cell.col && conn.fromStr === cell.str) ||
+    (conn.toCol === cell.col && conn.toStr === cell.str)
+  );
+};
 
-        // Check for next note on the same string
-        let hasNeighbor = false;
-        for (let i = col + 1; i < columns.length; i++) {
-             if (columns[i][str] !== -1) {
-                 hasNeighbor = true;
-                 break;
-             }
-        }
-        
-        if (hasNeighbor) {
-            const newConnections = [...connections, { col, str }];
-            setToastMessage("Link Added");
-            updateStateWithHistory(columns, durations, chordNames, newConnections);
-        }
-    }
-  };
+const removeConnectionForCell = (
+  cell: { col: number; str: number },
+  all: Connection[]
+) => {
+  const idx = all.findIndex(c => cellMatchesConnection(cell, c));
+  if (idx === -1) return { changed: false, next: all };
+  const next = [...all];
+  next.splice(idx, 1);
+  return { changed: true, next };
+};
 
-  const handleRemoveConnectionChain = (startCol: number, endCol: number, str: number) => {
-    const newConnections = connections.filter(c => {
-        if (c.str !== str) return true;
-        // Remove all connections that lie within the chain's span
-        if (c.col >= startCol && c.col < endCol) return false;
-        return true;
-    });
+const handleToggleConnection = () => {
+  if (!activeCell) return;
+
+  // 1) If this cell already participates in a connection, toggle OFF (delete)
+  const { changed, next } = removeConnectionForCell(activeCell, connections);
+  if (changed) {
+    updateStateWithHistory(columns, durations, chordNames, next);
+    setPendingLinkStart(null);
+    setToastMessage("Link Removed");
+    return;
+  }
+
+  // 2) If we are already in "link mode" and user clicks the same button again,
+  //    cancel link mode.
+  if (pendingLinkStart) {
+    setPendingLinkStart(null);
+    setToastMessage("Link cancelled");
+    return;
+  }
+
+  // 3) Otherwise, enter "link mode" using this cell as the start.
+  const currentNote = columns[activeCell.col][activeCell.str];
+  if (currentNote === -1) {
+    setToastMessage("Place a note first");
+    return;
+  }
+
+  setPendingLinkStart(activeCell);
+  setToastMessage("Select target note to complete link");
+};
+
+const handleActiveCellChange = (cell: { col: number; str: number } | null) => {
+  setActiveCell(cell);
+
+  if (!pendingLinkStart || !cell) return;
+
+  // If same cell -> cancel
+  if (cell.col === pendingLinkStart.col && cell.str === pendingLinkStart.str) {
+    setPendingLinkStart(null);
+    setToastMessage("Link cancelled");
+    return;
+  }
+
+  const start = pendingLinkStart;
+  const noteStart = columns[start.col][start.str];
+  const noteEnd = columns[cell.col][cell.str];
+
+  if (noteStart === -1 || noteEnd === -1) {
+    setPendingLinkStart(null);
+    setToastMessage("Both cells need notes");
+    return;
+  }
+
+  // Normalize so "from" is the earlier column (for drawing/audio)
+  let fromCol = start.col;
+  let fromStr = start.str;
+  let toCol = cell.col;
+  let toStr = cell.str;
+
+  if (toCol < fromCol) {
+    [fromCol, toCol] = [toCol, fromCol];
+    [fromStr, toStr] = [toStr, fromStr];
+  }
+
+  // Avoid duplicates
+  const alreadyExists = connections.some(
+    c =>
+      c.fromCol === fromCol &&
+      c.fromStr === fromStr &&
+      c.toCol === toCol &&
+      c.toStr === toStr
+  );
+  if (alreadyExists) {
+    setPendingLinkStart(null);
+    setToastMessage("Link already exists");
+    return;
+  }
+
+  const newConnections: Connection[] = [
+    ...connections,
+    { fromCol, fromStr, toCol, toStr },
+  ];
+
+  updateStateWithHistory(columns, durations, chordNames, newConnections);
+  setPendingLinkStart(null);
+  setToastMessage("Link Added");
+};
+
+const handleRemoveConnectionChain = (
+  startCol: number,
+  endCol: number,
+  str: number
+) => {
+  // For now, interpret this as "remove the connection whose fromCol == startCol,
+  // toCol == endCol and fromStr == str"
+  const newConnections = connections.filter(
+    c =>
+      !(
+        c.fromCol === startCol &&
+        c.toCol === endCol &&
+        c.fromStr === str
+      )
+  );
+
+  if (newConnections.length !== connections.length) {
+    updateStateWithHistory(columns, durations, chordNames, newConnections);
+    setToastMessage("Link Removed");
+  }
+};
+
     
     if (newConnections.length !== connections.length) {
         updateStateWithHistory(columns, durations, chordNames, newConnections);
@@ -475,7 +572,14 @@ const handleGenerate = async () => {
           }
       }
       // Also remove connections in this bar for cleanliness
-      const newConnections = connections.filter(c => !(c.col >= startIdx && c.col < endIdx));
+        // Remove connections that touch this bar on either end
+        const newConnections = connections.filter(
+          c =>
+            !(
+              (c.fromCol >= startIdx && c.fromCol < endIdx) ||
+              (c.toCol >= startIdx && c.toCol < endIdx)
+            )
+        );
       
       updateStateWithHistory(newColumns, durations, chordNames, newConnections);
       setToastMessage("Bar Cleared");
@@ -494,9 +598,22 @@ const handleGenerate = async () => {
       const startIdx = barIndex * currentStepsPerBar;
       const endIdx = startIdx + currentStepsPerBar;
     
-      const relativeConnections = connections
-        .filter(c => c.col >= startIdx && c.col < endIdx)
-        .map(c => ({ col: c.col - startIdx, str: c.str }));
+    const relativeConnections: Connection[] = connections
+      // only copy links fully contained within the bar
+      .filter(
+        c =>
+          c.fromCol >= startIdx &&
+          c.fromCol < endIdx &&
+          c.toCol >= startIdx &&
+          c.toCol < endIdx
+      )
+      .map(c => ({
+        fromCol: c.fromCol - startIdx,
+        fromStr: c.fromStr,
+        toCol: c.toCol - startIdx,
+        toStr: c.toStr,
+      }));
+
     
       const copiedState: HistoryState = {
         columns: JSON.parse(JSON.stringify(columns.slice(startIdx, endIdx))),
@@ -535,9 +652,14 @@ const handleGenerate = async () => {
       const newDurations = [...durations];
       const newChords = [...chordNames];
     
-      let newConnections = connections.filter(
-        c => !(c.col >= startIdx && c.col < startIdx + clipLen)
-      );
+        let newConnections = connections.filter(
+          c =>
+            !(
+              (c.fromCol >= startIdx && c.fromCol < startIdx + clipLen) ||
+              (c.toCol >= startIdx && c.toCol < startIdx + clipLen)
+            )
+        );
+
     
       for (let i = 0; i < clipLen; i++) {
         const targetIdx = startIdx + i;
@@ -548,12 +670,20 @@ const handleGenerate = async () => {
         }
       }
     
-      clipboard.connections.forEach(c => {
-        const targetCol = startIdx + c.col;
-        if (targetCol < newColumns.length) {
-          newConnections.push({ col: targetCol, str: c.str });
-        }
-      });
+        clipboard.connections.forEach(c => {
+          const fromCol = startIdx + c.fromCol;
+          const toCol = startIdx + c.toCol;
+        
+          if (fromCol < newColumns.length && toCol < newColumns.length) {
+            newConnections.push({
+              fromCol,
+              fromStr: c.fromStr,
+              toCol,
+              toStr: c.toStr,
+            });
+          }
+        });
+
     
       updateStateWithHistory(newColumns, newDurations, newChords, newConnections);
       setToastMessage("Bar Pasted");
@@ -1163,7 +1293,7 @@ const handlePlayFromStart = () => {
                     editRowStartBarIndex={editRowStartBarIndex}
                     activeCell={activeCell}
                     connections={connections}
-                    onActiveCellChange={setActiveCell}
+                    onActiveCellChange={handleActiveCellChange}
                     onEditRowStartChange={setEditRowStartBarIndex}
                     onTuningChange={handleTuningChange}
                     onUpdateColumn={handleUpdateColumn}
