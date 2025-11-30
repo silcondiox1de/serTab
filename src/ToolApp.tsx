@@ -721,7 +721,29 @@ const handleGenerate = async () => {
     }
   };
 
+  const handleTogglePlay = () => {
+    if (isPlaying) {
+      audioEngine.stop();
+      setIsPlaying(false);
+      setCurrentColIndex(-1);
+    } else {
+      let startIndex = 0;
+      if (selectedColIndex > -1) {
+         startIndex = Math.floor(selectedColIndex / currentStepsPerBar) * currentStepsPerBar;
+      } else {
+         startIndex = editRowStartBarIndex * currentStepsPerBar;
+      }
+      audioEngine.start(startIndex);
+      setIsPlaying(true);
+    }
+  };
 
+const handlePlayFromStart = () => {
+    audioEngine.stop(); // Stop any current playback
+    audioEngine.start(0); // Start from index 0
+    setIsPlaying(true);
+    // Note: We don't change currentColIndex here because AudioEngine callback will update it instantly
+  };
   // --------------------------------------------------------------------------
   // Global Keyboard Shortcuts (Ref-based for stability)
   // --------------------------------------------------------------------------
@@ -877,29 +899,7 @@ const handleGenerate = async () => {
     });
   }, []);
 
-  const handleTogglePlay = () => {
-    if (isPlaying) {
-      audioEngine.stop();
-      setIsPlaying(false);
-      setCurrentColIndex(-1);
-    } else {
-      let startIndex = 0;
-      if (selectedColIndex > -1) {
-         startIndex = Math.floor(selectedColIndex / currentStepsPerBar) * currentStepsPerBar;
-      } else {
-         startIndex = editRowStartBarIndex * currentStepsPerBar;
-      }
-      audioEngine.start(startIndex);
-      setIsPlaying(true);
-    }
-  };
 
-const handlePlayFromStart = () => {
-    audioEngine.stop(); // Stop any current playback
-    audioEngine.start(0); // Start from index 0
-    setIsPlaying(true);
-    // Note: We don't change currentColIndex here because AudioEngine callback will update it instantly
-  };
 
   if (isReviewMode) {
     return (
