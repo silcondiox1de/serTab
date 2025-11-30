@@ -441,15 +441,27 @@ export const TabGrid: React.FC<TabGridProps> = ({
     const rowStartColIndex = editRowStartBarIndex * stepsPerBar;
 
     return (
-        <div 
-            ref={editAreaRef}
-            className="relative pl-14 mb-8"
-        >
-            <div className="absolute -top-3 left-0 w-14 flex justify-center z-30">
-                 <div className="px-2 py-0.5 bg-cyan-600 text-white text-[9px] uppercase tracking-wider font-bold rounded shadow-lg font-['Courier']">
-                    Editor
-                 </div>
-            </div>
+      <div 
+        ref={editAreaRef}
+        className="relative pl-14 mb-8"
+      >
+        {/* EDITOR badge snug in the corner */}
+        <div className="absolute left-0 top-0 -translate-y-1/2 z-30">
+          <button
+            className="
+              px-3 py-0.5
+              text-[10px] font-bold uppercase tracking-[0.25em]
+              bg-cyan-500/15 text-cyan-300
+              border border-cyan-500/40
+              rounded-md rounded-bl-none
+              shadow-sm
+              font-['Courier']
+            "
+          >
+            Editor
+          </button>
+        </div>
+
 
             {/* "Headstock" Sidebar */}
             <div className="absolute left-0 top-0 bottom-0 w-14 z-20 flex flex-col">
