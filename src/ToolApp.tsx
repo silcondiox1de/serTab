@@ -336,10 +336,10 @@ const App: React.FC = () => {
   const handlePlayFromStart = () => { audioEngine.stop(); audioEngine.start(0); setIsPlaying(true); };
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-Based Fix)
+  // Global Keyboard Shortcuts (Robust Version)
   // --------------------------------------------------------------------------
   
-  // 1. Create a "Live Link" to your latest functions and state
+  // 1. Live Link to latest state/handlers
   const handlersRef = useRef({
       handleCopyBar, 
       handlePasteBar, 
@@ -348,30 +348,31 @@ const App: React.FC = () => {
       undo, 
       redo, 
       handleToggleConnection,
-      isReviewMode
+      isReviewMode,
+      activeCell, // Needed for debugging log
+      clipboard   // Needed for debugging log
   });
 
-  // 2. Update the link on every render so it's never stale
+  // Update ref on every render
   useEffect(() => {
       handlersRef.current = { 
-          handleCopyBar, 
-          handlePasteBar, 
-          handleSaveProject, 
-          handleTogglePlay, 
-          undo, 
-          redo, 
-          handleToggleConnection,
-          isReviewMode
+          handleCopyBar, handlePasteBar, handleSaveProject, handleTogglePlay, 
+          undo, redo, handleToggleConnection, isReviewMode, activeCell, clipboard
       };
   });
 
-  // 3. The Listener (Attached ONLY ONCE, uses the Live Link)
+  // 2. The Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = handlersRef.current; // <--- Access fresh handlers here
+        const current = handlersRef.current;
         const target = e.target as HTMLElement;
-        const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
+        // Check if user is typing in an input field
+        const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+
+        // --- DEBUG: UNCOMMENT IF STILL FAILING ---
+        // console.log(`[Key] Code: ${e.code}, Ctrl: ${e.ctrlKey}, Meta: ${e.metaKey}, InputFocused: ${isInputFocused}`);
+
         // Save: Ctrl+S
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
@@ -403,35 +404,39 @@ const App: React.FC = () => {
             return;
         }
 
-        // Copy: Ctrl+C
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-            if (isInputFocused) return; 
+        // Copy: Ctrl+C (Using e.code 'KeyC' is safer)
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
+            if (isInputFocused) return; // Let browser copy text if typing
+            
             e.preventDefault();
-            console.log("📋 Ctrl+C Detected"); // Debug Log
+            console.log("📋 Ctrl+C Triggered. Active Cell:", current.activeCell);
             current.handleCopyBar();
             return;
         }
 
-        // Paste: Ctrl+V
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-            if (isInputFocused) return; 
+        // Paste: Ctrl+V (Using e.code 'KeyV')
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
+            if (isInputFocused) return; // Let browser paste text if typing
+            
             e.preventDefault();
-            console.log("📋 Ctrl+V Detected"); // Debug Log
+            console.log("📋 Ctrl+V Triggered. Clipboard:", current.clipboard);
             current.handlePasteBar();
             return;
         }
         
         // Link: L
-        if (e.key.toLowerCase() === 'l' && !isInputFocused) {
+        if (e.code === 'KeyL' && !isInputFocused) {
             e.preventDefault();
             current.handleToggleConnection();
             return;
         }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty dependency array = Robust listener!
+    // Use 'document' instead of 'window' for better capture
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
 
   if (isReviewMode) {
     return <ReviewView title={songTitle} bpm={bpm} timeSignature={timeSignature} instrument={currentInstrument} tuning={customTuning} columns={columns} durations={durations} chordNames={chordNames} connections={connections} onClose={() => setIsReviewMode(false)} onRemoveConnectionChain={handleRemoveConnectionChain} />;
