@@ -115,7 +115,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   toolsHeader: {
     fontSize: '1rem', // Much smaller (was 1.8rem)
     fontWeight: '700',
-    color: '#000',      
+    color: '#666',      
     margin: 0,
     textTransform: 'uppercase', // Optional: looks good with Courier
     letterSpacing: '1px',
@@ -128,7 +128,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   link: {
     textDecoration: 'none',
-    color: '#000',
+    color: '#666',
     borderBottom: '1px solid #000', 
     cursor: 'pointer',
     fontWeight: 'bold',
