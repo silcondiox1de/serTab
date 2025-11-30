@@ -24,7 +24,7 @@ export default function LandingPage() {
           
           <div style={styles.toolRow}>
             <Link to="/tool/tab" style={styles.link}>
-              Serum Tab
+              Serum Tab©
             </Link>
 
             <span style={styles.pipe}>|</span>
@@ -39,14 +39,14 @@ export default function LandingPage() {
 
       {/* SECTION C: SMALLER, 1 ROW, PRIVATE BETA */}
       <footer style={styles.footer}>
-        <span>&copy; 2025 Serum Lab</span>
+        <span>&copy; 2025 Serum Lab© by SerumAI LLC</span>
         <span style={styles.footerDot}>&bull;</span>
         
         <span style={{ opacity: 0.7 }}>Private Beta</span>
         <span style={styles.footerDot}>&bull;</span>
         
         <a href="mailto:serum.ai@outlook.com" style={styles.contactLink}>
-          Contact
+          Contact us
         </a>
       </footer>
     </div>
@@ -60,7 +60,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
     minHeight: '100vh',
     backgroundColor: '#000000',
-    color: '#0DFF17',
+    color: '#0DDE16',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   content: {
@@ -81,18 +81,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '30px',
   },
   logo: {
-    maxWidth: '680px', // Increased size (was 280px)
+    maxWidth: '720px', // Increased size 
     width: '100%',
     height: 'auto',
     marginBottom: '25px', 
   },
   tagline: {
     fontSize: '2rem', // Increased size (was 1.4rem)
-    fontWeight: '300',  
+    fontWeight: '150',  
     color: '#0DDE16',       
     margin: 0,
     textAlign: 'center',
-    letterSpacing: '-0.3px',
+    letterSpacing: '-0.5px',
   },
 
   separator: {
