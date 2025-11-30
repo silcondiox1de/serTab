@@ -81,15 +81,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '30px',
   },
   logo: {
-    maxWidth: '380px', // Increased size (was 280px)
+    maxWidth: '680px', // Increased size (was 280px)
     width: '100%',
     height: 'auto',
     marginBottom: '25px', 
   },
   tagline: {
     fontSize: '2rem', // Increased size (was 1.4rem)
-    fontWeight: '500',  
-    color: '#333', // Slightly darker to match the size      
+    fontWeight: '400',  
+    color: '#0DDE16', // Slightly darker to match the size      
     margin: 0,
     textAlign: 'center',
     letterSpacing: '-0.5px',
