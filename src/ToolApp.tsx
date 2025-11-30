@@ -336,50 +336,102 @@ const App: React.FC = () => {
   const handlePlayFromStart = () => { audioEngine.stop(); audioEngine.start(0); setIsPlaying(true); };
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (Ref-Based Fix)
   // --------------------------------------------------------------------------
   
-  // 1. Update ref whenever relevant state changes
-  useEffect(() => {
-      stateRef.current = { 
-          activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, 
-          columns, durations, chordNames, connections, currentStepsPerBar,
-          handleSaveProject, handleTogglePlay, undo, redo, handleToggleConnection, 
-          handleCopyBar, handlePasteBar // Ensure these are captured!
-      };
-  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar]);
+  // 1. Create a "Live Link" to your latest functions and state
+  const handlersRef = useRef({
+      handleCopyBar, 
+      handlePasteBar, 
+      handleSaveProject, 
+      handleTogglePlay, 
+      undo, 
+      redo, 
+      handleToggleConnection,
+      isReviewMode
+  });
 
-  // 2. Single Listener that uses the Ref
+  // 2. Update the link on every render so it's never stale
+  useEffect(() => {
+      handlersRef.current = { 
+          handleCopyBar, 
+          handlePasteBar, 
+          handleSaveProject, 
+          handleTogglePlay, 
+          undo, 
+          redo, 
+          handleToggleConnection,
+          isReviewMode
+      };
+  });
+
+  // 3. The Listener (Attached ONLY ONCE, uses the Live Link)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = stateRef.current;
+        const current = handlersRef.current; // <--- Access fresh handlers here
         const target = e.target as HTMLElement;
         const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); current.handleSaveProject(); return; }
+        // Save: Ctrl+S
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            current.handleSaveProject();
+            return;
+        }
+
         if (current.isReviewMode) return;
-        if (e.code === 'Space' && !isInputFocused) { e.preventDefault(); current.handleTogglePlay(); return; }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? current.redo() : current.undo(); return; }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); current.redo(); return; }
-        
-        // --- FIXED: Call Copy/Paste from REF ---
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !isInputFocused) { 
-            e.preventDefault(); 
-            current.handleCopyBar(); 
-            return; 
+
+        // Space: Play/Stop
+        if (e.code === 'Space' && !isInputFocused) {
+             e.preventDefault(); 
+             current.handleTogglePlay();
+             return;
         }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !isInputFocused) { 
-            e.preventDefault(); 
-            current.handlePasteBar(); 
-            return; 
+
+        // Undo: Ctrl+Z
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) current.redo();
+            else current.undo();
+            return;
+        }
+
+        // Redo: Ctrl+Y
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            current.redo();
+            return;
+        }
+
+        // Copy: Ctrl+C
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            if (isInputFocused) return; 
+            e.preventDefault();
+            console.log("📋 Ctrl+C Detected"); // Debug Log
+            current.handleCopyBar();
+            return;
+        }
+
+        // Paste: Ctrl+V
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+            if (isInputFocused) return; 
+            e.preventDefault();
+            console.log("📋 Ctrl+V Detected"); // Debug Log
+            current.handlePasteBar();
+            return;
         }
         
-        if (e.key.toLowerCase() === 'l' && !isInputFocused) { e.preventDefault(); current.handleToggleConnection(); return; }
+        // Link: L
+        if (e.key.toLowerCase() === 'l' && !isInputFocused) {
+            e.preventDefault();
+            current.handleToggleConnection();
+            return;
+        }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); 
+  }, []); // Empty dependency array = Robust listener!
 
   if (isReviewMode) {
     return <ReviewView title={songTitle} bpm={bpm} timeSignature={timeSignature} instrument={currentInstrument} tuning={customTuning} columns={columns} durations={durations} chordNames={chordNames} connections={connections} onClose={() => setIsReviewMode(false)} onRemoveConnectionChain={handleRemoveConnectionChain} />;
