@@ -58,23 +58,26 @@ const getFrequencyFromStr = (noteStr: string, referenceFreq: number): number => 
 };
 
 // Toast Component
-const Toast = ({ message, onClose }: { message: string | null, onClose: () => void }) => {
-    useEffect(() => {
-        if (message) {
-            const timer = setTimeout(onClose, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [message, onClose]);
+// ✅ safe, hoisted version
+function Toast(props: { message: string | null; onClose: () => void }) {
+  const { message, onClose } = props;
 
-    if (!message) return null;
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [message, onClose]);
 
-    return (
-        <div className="fixed bottom-8 right-8 bg-cyan-500 text-white px-5 py-3 rounded-full shadow-lg shadow-cyan-500/20 z-50 flex items-center animate-bounce-in border border-cyan-400/30 backdrop-blur-md">
-            <span className="font-bold mr-2 text-xl">✓</span>
-            <span className="font-medium text-sm tracking-wide">{message}</span>
-        </div>
-    );
-};
+  if (!message) return null;
+
+  return (
+    <div className="fixed bottom-8 right-8 bg-cyan-500 text-white px-5 py-3 rounded-full shadow-lg shadow-cyan-500/20 z-50 flex items-center animate-bounce-in border border-cyan-400/30 backdrop-blur-md">
+      <span className="font-bold mr-2 text-xl">✓</span>
+      <span className="font-medium text-sm tracking-wide">{message}</span>
+    </div>
+  );
+}
+
 
 interface HistoryState {
   columns: TabColumn[];
