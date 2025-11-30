@@ -84,11 +84,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: '680px', // Increased size (was 280px)
     width: '100%',
     height: 'auto',
-    marginBottom: '25px', 
+    marginBottom: '15px', 
   },
   tagline: {
     fontSize: '2rem', // Increased size (was 1.4rem)
-    fontWeight: '400',  
+    fontWeight: '300',  
     color: '#0DDE16', // Slightly darker to match the size      
     margin: 0,
     textAlign: 'center',
