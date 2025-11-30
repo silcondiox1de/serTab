@@ -114,42 +114,84 @@ export const Controls: React.FC<ControlsProps> = ({
             </Group>
 
             {/* 2. STANDARD TOOLS (Consolidated Group) */}
-            <Group>
-                <button onClick={onOpenChordLibrary} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"><span>🎵</span> Chords</button>
-                <button onClick={onToggleZoom} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${isZoomed ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> {isZoomed ? 'Out' : 'In'}
+              <Group>
+                <button
+                  onClick={onOpenChordLibrary}
+                  className="h-8 px-3 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all border border-transparent flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>🎵</span> Chords
                 </button>
-                
+              
+                {/* divider between 2 (Chords) and 3 (In) */}
                 <Divider />
-                
-                <button onClick={onToggleConnection} disabled={!hasSelection} className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${!hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'}`} title="Link/Slur (L)">
-                    <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none"><path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" /></svg> Link
+              
+                <button
+                  onClick={onToggleZoom}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                    isZoomed ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                  {isZoomed ? 'Out' : 'In'}
                 </button>
-                
+              
+                {/* divider between 3 (In) and Link */}
                 <Divider />
+              
+                <button
+                  onClick={onToggleConnection}
+                  disabled={!hasSelection}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border border-transparent flex items-center gap-1.5 active:scale-95 ${
+                    !hasSelection ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                  title="Link/Slur (L)"
+                >
+                  <svg width="16" height="10" viewBox="0 0 20 12" className="stroke-current" fill="none">
+                    <path d="M 2 10 Q 10 0 18 10" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  Link
+                </button>
+              
+                {/* divider between Link and 4 (+ Bars) */}
+                <Divider />
+              
+                <button
+                  onClick={onAddMeasure}
+                  className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95"
+                  title="Add 1 Bar"
+                >
+                  +1 Bar
+                </button>
+                <button
+                  onClick={onAddFourMeasures}
+                  className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95"
+                  title="Add 4 Bars"
+                >
+                  +4 Bars
+                </button>
+              </Group>
 
-                <button onClick={onAddMeasure} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 1 Bar">+1 Bar</button>
-                <button onClick={onAddFourMeasures} className="h-8 px-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all active:scale-95" title="Add 4 Bars">+4 Bars</button>
-            </Group>
+            
 
             {/* 3. SERUM LAB (Right Aligned & Highlighted) */}
             <Group className="border-purple-500/50 bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 shadow-lg shadow-purple-900/20">
                 <div className="flex flex-col justify-center px-1 mr-1">
-                    <span className="text-[10px] text-purple-200 font-extrabold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
+                    <span className="text-[10px] text-purple-200 font-bold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
                 </div>
-                
-                {/* RENAMED: Fix -> Fix Fingering */}
+                <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
+
                 <button
                     onClick={onOptimize}
                     className="h-8 px-3 rounded-lg text-xs font-bold text-purple-100 hover:text-white hover:bg-white/20 transition-all border border-transparent flex items-center gap-1.5 active:scale-95 whitespace-nowrap"
                     title="Optimize Fingering (AI Luthier)"
                 >
-                    <span>✨</span> Fix Fingering
+                    <span>✨</span> Finger fix
                 </button>
                 
                 <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
 
-                {/* RENAMED: Generate -> Help Compose */}
                 <button
                     onClick={onGenerate}
                     disabled={isGenerating}
@@ -158,7 +200,7 @@ export const Controls: React.FC<ControlsProps> = ({
                         ? 'text-purple-200/50 cursor-wait' 
                         : 'text-purple-100 hover:text-white hover:bg-white/20'
                     }`}
-                    title="Generate Riff"
+                    title="Generate Riff (AI)"
                 >
                     {isGenerating ? (
                         <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

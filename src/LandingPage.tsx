@@ -117,7 +117,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: '700',
     color: '#666',      
     margin: 0,
-    //textTransform: 'uppercase', // Optional: looks good with Courier
     letterSpacing: '1px',
   },
   toolRow: {
@@ -128,7 +127,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   link: {
     textDecoration: 'none',
-    color: '#666',
+    color: '#0DDE16',
     borderBottom: '1px solid #000', 
     cursor: 'pointer',
     fontWeight: 'bold',
@@ -137,7 +136,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#ccc', 
   },
   comingSoon: {
-    color: '#333',
+    color: '#444',
     fontStyle: 'italic',
   },
 
