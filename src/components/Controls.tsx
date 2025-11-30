@@ -173,7 +173,7 @@ export const Controls: React.FC<ControlsProps> = ({
                 </button>
               </Group>
             
-            <Group> ...standard tools... </Group>
+            //<Group> ...standard tools... </Group>
             
             {/* divider between 4 (+ Bars) and 5 (Serum Lab) */}
             <Divider />
@@ -188,13 +188,13 @@ export const Controls: React.FC<ControlsProps> = ({
                     <span className="text-[10px] text-purple-200 font-extrabold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
                 </div>
                 
-                {/* RENAMED: Fix -> Fix Fingering */}
+                {/* RENAMED: Fix -> Finger fix */}
                 <button
                     onClick={onOptimize}
                     className="h-8 px-3 rounded-lg text-xs font-bold text-purple-100 hover:text-white hover:bg-white/20 transition-all border border-transparent flex items-center gap-1.5 active:scale-95 whitespace-nowrap"
                     title="Optimize Fingering (AI Luthier)"
                 >
-                    <span>✨</span> Fix Fingering
+                    <span>✨</span> Finger fix
                 </button>
                 
                 <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
@@ -208,7 +208,7 @@ export const Controls: React.FC<ControlsProps> = ({
                         ? 'text-purple-200/50 cursor-wait' 
                         : 'text-purple-100 hover:text-white hover:bg-white/20'
                     }`}
-                    title="Generate Riff"
+                    title="Generate Riff (AI)"
                 >
                     {isGenerating ? (
                         <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
