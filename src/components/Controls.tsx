@@ -178,7 +178,7 @@ export const Controls: React.FC<ControlsProps> = ({
             {/* 3. SERUM LAB (Right Aligned & Highlighted) */}
             <Group className="border-purple-500/50 bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 shadow-lg shadow-purple-900/20">
                 <div className="flex flex-col justify-center px-1 mr-1">
-                    <span className="text-[10px] text-purple-200 font-extrabold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
+                    <span className="text-[10px] text-purple-200 font-bold uppercase tracking-widest leading-none drop-shadow-md">Serum Lab</span>
                 </div>
                 <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
 
