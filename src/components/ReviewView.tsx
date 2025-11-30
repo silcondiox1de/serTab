@@ -1,8 +1,3 @@
-Totally—here’s your component with the bar-number tags moved to the **top-left corner of each bar** as a little pill, and the old bottom bar-number row removed (you already removed it, so this is just the styling / position change).
-
-The only real change is inside the `systemBars.map` bar render: that bar-number `<div>`.
-
-```tsx
 import React from 'react';
 import { TabColumn, InstrumentConfig, NoteDuration, TimeSignatureType, TIME_SIGNATURES } from '../types';
 
@@ -608,4 +603,3 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     </div>
   );
 };
-```
