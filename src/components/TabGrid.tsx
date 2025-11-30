@@ -362,27 +362,43 @@ export const TabGrid: React.FC<TabGridProps> = ({
                              return { ...m, beam8: { left: beam8Left, right: beam8Right }, beam16: { left: beam16Left, right: beam16Right } };
                         });
 
-                        // --- BAR LEVEL PLAYHEAD LOGIC ---
-                        // Check if the playhead is currently inside this specific bar
-                        const isPlayheadInBar = currentColumnIndex >= barStartColIdx && currentColumnIndex < barStartColIdx + stepsPerBar;
-                        let playheadLeftPercent = 0;
-                        
-                        if (isPlayheadInBar) {
-                            // Calculate exact percentage position within this bar
-                            const relativeIndex = currentColumnIndex - barStartColIdx;
-                            
-                            // We need to sum the width of all markers up to the current one to get exact position
-                            // because markers have variable widths
-                            let stepsCounted = 0;
-                            for(let m of markers) {
-                                if (m.globalIdx === currentColumnIndex) {
-                                    // Found the current marker
-                                    playheadLeftPercent = (stepsCounted / stepsPerBar) * 100;
-                                    break;
-                                }
-                                stepsCounted += m.span;
-                            }
-                        }
+                      // --- BAR LEVEL PLAYHEAD LOGIC ---
+// Check if the playhead is currently inside this specific bar
+const isPlayheadInBar =
+  currentColumnIndex >= barStartColIdx &&
+  currentColumnIndex < barStartColIdx + stepsPerBar;
+
+let playheadLeftPercent = 0;
+
+if (isPlayheadInBar) {
+  // Step index within this bar
+  const relativeIndex = currentColumnIndex - barStartColIdx;
+
+  // We walk through the markers and figure out:
+  // 1) how many steps are fully "before" the current step
+  // 2) for the marker that contains the step, how far inside it we are
+  let stepsBeforeCurrent = 0;
+
+  for (const m of markers) {
+    const startStep = m.colIdx;            // marker's start step in this bar
+    const endStep   = m.colIdx + m.span;   // exclusive
+
+    if (relativeIndex >= startStep && relativeIndex < endStep) {
+      // We're inside this marker.
+      const inMarkerOffset = relativeIndex - startStep;
+      stepsBeforeCurrent += inMarkerOffset;
+      break;
+    } else {
+      // Entire marker is before the playhead.
+      stepsBeforeCurrent += m.span;
+    }
+  }
+
+  playheadLeftPercent = (stepsBeforeCurrent / stepsPerBar) * 100;
+}
+
+
+
 
                         return (
                             <div key={actualBarIdx} className={`flex flex-col relative border-r border-gray-800 last:border-0 transition-colors duration-200 ${isZoomed ? 'flex-shrink-0' : 'flex-1'} ${isBarActive ? 'bg-gray-800/30' : ''}`} style={{ minWidth: isZoomed ? '400px' : '0' }}>
