@@ -704,30 +704,49 @@ const handleGenerate = async () => {
     }
   };
 
+
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts
-  // --------------------------------------------------------------------------
-  
-  // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (Ref-based for stability)
   // --------------------------------------------------------------------------
   
+  // Keep a ref to the latest state so the event listener never sees "stale" data
+  const stateRef = useRef({
+      activeCell,
+      clipboard,
+      historyIndex,
+      history,
+      isReviewMode,
+      isPlaying,
+      columns // Needed for checks
+  });
+
+  // Update ref whenever relevant state changes
+  useEffect(() => {
+      stateRef.current = { activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns };
+  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+        const current = stateRef.current; // Access latest state instantly
         const target = e.target as HTMLElement;
-        // Don't trigger shortcuts if typing in an input
         const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        // Save: Ctrl+S
+        // --- DEBUGGING LOGS (Check Console F12 if shortcuts fail) ---
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
+            console.log(`⌨️ Shortcut detected: Ctrl+${e.key.toUpperCase()}`);
+            console.log(`   State: InputFocused=${isInputFocused}, CellSelected=${!!current.activeCell}`);
+        }
+
+        // Save: Ctrl+S (Always allow)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
             handleSaveProject();
             return;
         }
 
-        if (isReviewMode) return;
+        if (current.isReviewMode) return;
 
-        // Play/Stop: Space
+        // Space: Play/Stop (Block if typing)
         if (e.code === 'Space' && !isInputFocused) {
              e.preventDefault(); 
              handleTogglePlay();
@@ -749,16 +768,22 @@ const handleGenerate = async () => {
             return;
         }
 
-        // Copy: Ctrl+C
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !isInputFocused) {
+        // Copy: Ctrl+C (Block if typing title/chords)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            if (isInputFocused) return; // Let browser copy text
+            
             e.preventDefault();
+            console.log("📋 Triggering Copy Bar...");
             handleCopyBar();
             return;
         }
 
-        // Paste: Ctrl+V
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !isInputFocused) {
+        // Paste: Ctrl+V (Block if typing title/chords)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+            if (isInputFocused) return; // Let browser paste text
+            
             e.preventDefault();
+            console.log("📋 Triggering Paste Bar...");
             handlePasteBar();
             return;
         }
@@ -773,22 +798,7 @@ const handleGenerate = async () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    
-  // CRITICAL FIX: Added 'activeCell' and 'clipboard' explicitly to dependencies
-  }, [
-    isPlaying, 
-    activeCell, // <--- This was missing/indirect before
-    clipboard,  // <--- This ensures Paste knows what's in the clipboard
-    currentStepsPerBar, 
-    editRowStartBarIndex, 
-    isReviewMode, 
-    history, 
-    historyIndex, 
-    columns, 
-    durations, 
-    chordNames, 
-    connections
-  ]);
+  }, []); // Empty dependency array = Listener attaches ONCE and never detaches!
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
