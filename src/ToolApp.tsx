@@ -706,62 +706,102 @@ const handleGenerate = async () => {
 
 
    // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Ref-Based for reliability)
+  // Global Keyboard Shortcuts (Ref-Based Fix)
   // --------------------------------------------------------------------------
   
-  // 1. Keep ref updated with latest state
-  useEffect(() => {
-      stateRef.current = { 
-          activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, 
-          columns, durations, chordNames, connections, currentStepsPerBar,
-          handleSaveProject, handleTogglePlay, undo, redo, handleToggleConnection, 
-          handleCopyBar, handlePasteBar // Ensure these are captured!
-      };
-  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar]);
+  // 1. Create a "Live Link" to your latest functions and state
+  const handlersRef = useRef({
+      handleCopyBar, 
+      handlePasteBar, 
+      handleSaveProject, 
+      handleTogglePlay, 
+      undo, 
+      redo, 
+      handleToggleConnection,
+      isReviewMode
+  });
 
-  // 2. Single Listener that uses the Ref
+  // 2. Update the link on every render so it's never stale
+  useEffect(() => {
+      handlersRef.current = { 
+          handleCopyBar, 
+          handlePasteBar, 
+          handleSaveProject, 
+          handleTogglePlay, 
+          undo, 
+          redo, 
+          handleToggleConnection,
+          isReviewMode
+      };
+  });
+
+  // 3. The Listener (Attached ONLY ONCE, uses the Live Link)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = stateRef.current;
+        const current = handlersRef.current; // <--- Access fresh handlers here
         const target = e.target as HTMLElement;
+        const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
-        // --- FIXED LOGIC: Allow shortcuts if user is in Title Input, BUT NOT if they are in a generic Text Area ---
-        // We assume id="project-title" is the only input we want to allow Global Shortcuts (except Copy text)
-        const isTitleInput = target.id === 'project-title';
-        const isOtherInput = !isTitleInput && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+        // Save: Ctrl+S
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            current.handleSaveProject();
+            return;
+        }
 
-        if (isOtherInput) return; // Stop if typing in chord box or search
-
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); current.handleSaveProject(); return; }
         if (current.isReviewMode) return;
-        if (e.code === 'Space' && !isTitleInput) { e.preventDefault(); current.handleTogglePlay(); return; }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? current.redo() : current.undo(); return; }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); current.redo(); return; }
-        
-        // Copy: Allow browser copy if in Title Input, otherwise trigger App Copy
-        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') { 
-            if (isTitleInput) return; // Let browser copy title text
-            e.preventDefault(); 
-            console.log("📋 Copy Triggered");
-            current.handleCopyBar(); 
-            return; 
+
+        // Space: Play/Stop
+        if (e.code === 'Space' && !isInputFocused) {
+             e.preventDefault(); 
+             current.handleTogglePlay();
+             return;
         }
 
-        // Paste: Allow browser paste if in Title Input, otherwise trigger App Paste
-        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') { 
-            if (isTitleInput) return; // Let browser paste title text
-            e.preventDefault(); 
-            console.log("📋 Paste Triggered");
-            current.handlePasteBar(); 
-            return; 
+        // Undo: Ctrl+Z
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) current.redo();
+            else current.undo();
+            return;
+        }
+
+        // Redo: Ctrl+Y
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            current.redo();
+            return;
+        }
+
+        // Copy: Ctrl+C
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            if (isInputFocused) return; 
+            e.preventDefault();
+            console.log("📋 Ctrl+C Detected"); // Debug Log
+            current.handleCopyBar();
+            return;
+        }
+
+        // Paste: Ctrl+V
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+            if (isInputFocused) return; 
+            e.preventDefault();
+            console.log("📋 Ctrl+V Detected"); // Debug Log
+            current.handlePasteBar();
+            return;
         }
         
-        if (e.code === 'KeyL' && !isTitleInput) { e.preventDefault(); current.handleToggleConnection(); return; }
+        // Link: L
+        if (e.key.toLowerCase() === 'l' && !isInputFocused) {
+            e.preventDefault();
+            current.handleToggleConnection();
+            return;
+        }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); 
+  }, []); // Empty dependency array = Robust listener!
 
   const handleInstrumentChange = (type: InstrumentType) => {
     if (type === instrumentType) return;
