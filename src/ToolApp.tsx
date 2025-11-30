@@ -325,6 +325,27 @@ const App: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleRestoreDraft = () => {
+    const s = localStorage.getItem('serumTab_autoSave');
+    if (s && window.confirm("Restore draft?")) {
+        try { 
+            const p = JSON.parse(s); 
+            // Reuse logic from loadProjectState but inline for brevity in this fix
+            setColumns(p.columns); setDurations(p.durations); setConnections(p.connections||[]); setSongTitle(p.title); setBpm(p.bpm); setInstrumentType(p.instrumentType);
+            setHistory([{columns: p.columns, durations: p.durations, chordNames: p.chordNames||[], connections: p.connections||[]}]); setHistoryIndex(0); setGridKey(k=>k+1);
+            setToastMessage("Session Restored");
+        } catch(e) {}
+    }
+  };
+
+  useEffect(() => {
+      if (saveStatus !== 'modified') setSaveStatus('modified');
+      const t = setTimeout(() => { setSaveStatus('saving'); localStorage.setItem('serumTab_autoSave', JSON.stringify(getProjectState())); setHasDraft(true); setTimeout(() => setSaveStatus('saved'), 500); }, 2000);
+      return () => clearTimeout(t);
+  }, [songTitle, bpm, instrumentType, timeSignature, columns, durations, customTuning, chordNames, connections]);
+
+  useEffect(() => { if (localStorage.getItem('serumTab_autoSave')) setHasDraft(true); }, []);
+
   const handleTogglePlay = () => {
     if (isPlaying) { audioEngine.stop(); setIsPlaying(false); setCurrentColIndex(-1); }
     else {
@@ -336,107 +357,62 @@ const App: React.FC = () => {
   const handlePlayFromStart = () => { audioEngine.stop(); audioEngine.start(0); setIsPlaying(true); };
 
   // --------------------------------------------------------------------------
-  // Global Keyboard Shortcuts (Robust Version)
+  // Global Keyboard Shortcuts (Ref-Based for reliability)
   // --------------------------------------------------------------------------
   
-  // 1. Live Link to latest state/handlers
-  const handlersRef = useRef({
-      handleCopyBar, 
-      handlePasteBar, 
-      handleSaveProject, 
-      handleTogglePlay, 
-      undo, 
-      redo, 
-      handleToggleConnection,
-      isReviewMode,
-      activeCell, // Needed for debugging log
-      clipboard   // Needed for debugging log
-  });
-
-  // Update ref on every render
+  // 1. Keep ref updated with latest state
   useEffect(() => {
-      handlersRef.current = { 
-          handleCopyBar, handlePasteBar, handleSaveProject, handleTogglePlay, 
-          undo, redo, handleToggleConnection, isReviewMode, activeCell, clipboard
+      stateRef.current = { 
+          activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, 
+          columns, durations, chordNames, connections, currentStepsPerBar,
+          handleSaveProject, handleTogglePlay, undo, redo, handleToggleConnection, 
+          handleCopyBar, handlePasteBar // Ensure these are captured!
       };
-  });
+  }, [activeCell, clipboard, historyIndex, history, isReviewMode, isPlaying, columns, durations, chordNames, connections, currentStepsPerBar]);
 
-  // 2. The Listener
+  // 2. Single Listener that uses the Ref
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        const current = handlersRef.current;
+        const current = stateRef.current;
         const target = e.target as HTMLElement;
         
-        // Check if user is typing in an input field
-        const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+        // --- FIXED LOGIC: Allow shortcuts if user is in Title Input, BUT NOT if they are in a generic Text Area ---
+        // We assume id="project-title" is the only input we want to allow Global Shortcuts (except Copy text)
+        const isTitleInput = target.id === 'project-title';
+        const isOtherInput = !isTitleInput && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
 
-        // --- DEBUG: UNCOMMENT IF STILL FAILING ---
-        // console.log(`[Key] Code: ${e.code}, Ctrl: ${e.ctrlKey}, Meta: ${e.metaKey}, InputFocused: ${isInputFocused}`);
+        if (isOtherInput) return; // Stop if typing in chord box or search
 
-        // Save: Ctrl+S
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-            e.preventDefault();
-            current.handleSaveProject();
-            return;
-        }
-
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); current.handleSaveProject(); return; }
         if (current.isReviewMode) return;
-
-        // Space: Play/Stop
-        if (e.code === 'Space' && !isInputFocused) {
-             e.preventDefault(); 
-             current.handleTogglePlay();
-             return;
+        if (e.code === 'Space' && !isTitleInput) { e.preventDefault(); current.handleTogglePlay(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? current.redo() : current.undo(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); current.redo(); return; }
+        
+        // Copy: Allow browser copy if in Title Input, otherwise trigger App Copy
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') { 
+            if (isTitleInput) return; // Let browser copy title text
+            e.preventDefault(); 
+            console.log("📋 Copy Triggered");
+            current.handleCopyBar(); 
+            return; 
         }
 
-        // Undo: Ctrl+Z
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-            e.preventDefault();
-            if (e.shiftKey) current.redo();
-            else current.undo();
-            return;
-        }
-
-        // Redo: Ctrl+Y
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-            e.preventDefault();
-            current.redo();
-            return;
-        }
-
-        // Copy: Ctrl+C (Using e.code 'KeyC' is safer)
-        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
-            if (isInputFocused) return; // Let browser copy text if typing
-            
-            e.preventDefault();
-            console.log("📋 Ctrl+C Triggered. Active Cell:", current.activeCell);
-            current.handleCopyBar();
-            return;
-        }
-
-        // Paste: Ctrl+V (Using e.code 'KeyV')
-        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
-            if (isInputFocused) return; // Let browser paste text if typing
-            
-            e.preventDefault();
-            console.log("📋 Ctrl+V Triggered. Clipboard:", current.clipboard);
-            current.handlePasteBar();
-            return;
+        // Paste: Allow browser paste if in Title Input, otherwise trigger App Paste
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') { 
+            if (isTitleInput) return; // Let browser paste title text
+            e.preventDefault(); 
+            console.log("📋 Paste Triggered");
+            current.handlePasteBar(); 
+            return; 
         }
         
-        // Link: L
-        if (e.code === 'KeyL' && !isInputFocused) {
-            e.preventDefault();
-            current.handleToggleConnection();
-            return;
-        }
+        if (e.code === 'KeyL' && !isTitleInput) { e.preventDefault(); current.handleToggleConnection(); return; }
     };
 
-    // Use 'document' instead of 'window' for better capture
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []); 
 
   if (isReviewMode) {
     return <ReviewView title={songTitle} bpm={bpm} timeSignature={timeSignature} instrument={currentInstrument} tuning={customTuning} columns={columns} durations={durations} chordNames={chordNames} connections={connections} onClose={() => setIsReviewMode(false)} onRemoveConnectionChain={handleRemoveConnectionChain} />;
@@ -494,7 +470,9 @@ const App: React.FC = () => {
         </div>
         <div className="absolute left-1/2 -translate-x-1/2">
             <div className="relative group flex items-center justify-center gap-2">
-                <input type="text" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Untitled Project" className="bg-transparent text-sm font-bold text-gray-200 placeholder-gray-600 text-center w-64 px-2 py-1 border-b-2 border-transparent group-hover:border-gray-600 focus:border-cyan-500 focus:outline-none focus:text-white transition-all duration-200" />
+                <input 
+                  id="project-title"
+                  type="text" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Untitled Project" className="bg-transparent text-sm font-bold text-gray-200 placeholder-gray-600 text-center w-64 px-2 py-1 border-b-2 border-transparent group-hover:border-gray-600 focus:border-cyan-500 focus:outline-none focus:text-white transition-all duration-200" />
                 <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-gray-600 opacity-50 group-hover:opacity-100 group-hover:text-cyan-400 transition-all pointer-events-none"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></div>
             </div>
         </div>
